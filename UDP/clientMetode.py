@@ -1,6 +1,6 @@
 import socket
 
-def klient(x_koordinater,y_koordinater):
+def client(x_koordinater,y_koordinater):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
     host = 'localhost'     # IP
