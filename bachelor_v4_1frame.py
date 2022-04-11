@@ -16,8 +16,8 @@ import glob
 from scipy.__config__ import show
 import socket
 
-#------------------------------------------------------------------
-#------------------Client socket------------------------- @bj8rnar
+
+#------------------Client socket------------------------- 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
 host = 'localhost'     # IP
@@ -272,9 +272,9 @@ def SendData():
     # print("Client: " + message)
     client_socket.sendto(message.encode(), (host,5432))
     
-    data, server = client_socket.recvfrom(65535)
-    data = data.decode()
-    print("Client: " + data)
+    # data, server = client_socket.recvfrom(65535)          #For testing av utdata med server.
+    # data = data.decode()
+    # print("Client: " + data)
     
     root.after(2000, SendData)
     
