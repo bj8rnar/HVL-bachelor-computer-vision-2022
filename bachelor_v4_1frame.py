@@ -1,7 +1,6 @@
 
 # Test Kirieg
 
-
 from tkinter import *
 from tkinter import ttk
 from tracemalloc import stop
@@ -29,7 +28,6 @@ color_list = [
         [0, 128, 128],  # olive
         [0, 255, 255],  # yellow
     ]
-
 
 class Tracker:  ####################################
     
@@ -251,7 +249,6 @@ def Update_statusbar():
    #pass
 
 
-
 ######################### - Calibrate Program - ################
 
 def Cal_Click():
@@ -259,8 +256,7 @@ def Cal_Click():
     workingFolder   = 'C:/Users/egrut/PyProjects/Tkinter GUI/TrackGUI/tester/Cal_Images'
     #"*/Cal_Images"
     imageType       = 'JPG'
-    
-    
+       
     #Creat new window    
     Top = Toplevel()
     Top.title('Calibrate')
@@ -316,7 +312,6 @@ def Cal_Click():
         Error_status = Label(Top, text = "Error Status: "+ Error_value)
         Error_status.grid(row= 6, column=0)
 
-
         if not cap.isOpened():
             print("Cannot open camera")
             exit()
@@ -340,7 +335,7 @@ def Cal_Click():
             imgpil.close()
             Pic_taken()
          
-         
+      
         def Pic_taken():    
             #count pictures taken
             count = 0
@@ -495,6 +490,7 @@ if __name__ == "__main__":
     root.iconbitmap('c:/users/egrut/pyprojects/Tkinter GUI/TrackGUI/wrench.ico')     # Setts icon for app
     root.geometry("1500x700")
         
+        
     #######     DEFINING Widgets:    #########
 
     # Frames define:
@@ -513,7 +509,6 @@ if __name__ == "__main__":
     statusbar_1 = Label(frame_0, text="Tr.1: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_2 = Label(frame_0, text="Tr.2: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_3 = Label(frame_0, text="Tr.3: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
-
 
     # Buttons define:
     button_quit = Button(frame_0, text="Quit", padx=10, pady=2, command=root.quit)
@@ -568,23 +563,18 @@ if __name__ == "__main__":
     statusbar_2.grid(row=9,column=0,columnspan=6, sticky=W+E)
     statusbar_3.grid(row=10,column=0,columnspan=6, sticky=W+E)
  
-    
-    
     #########################################
-  
+ 
+ 
+    ############# Commands ##################
+    
     t = []
     cap = cv2.VideoCapture(0)
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
-    #show_webcam()
     
     Update_statusbar()
     
     show_frames_one()
-    
-    
-    
-    # for obj in t:       
-    #     show_frames(obj.frame)
  
     
     
