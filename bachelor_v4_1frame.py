@@ -16,6 +16,7 @@ import glob
 from scipy.__config__ import show
 import socket
 
+#------------------------------------------------------------------
 #------------------Client socket------------------------- @bj8rnar
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
