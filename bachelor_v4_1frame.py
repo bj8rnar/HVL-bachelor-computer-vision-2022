@@ -16,19 +16,19 @@ import glob
 from scipy.__config__ import show
 
 tms = 80    #Times pr milliscond
+
 color_list = [
-        [255, 0, 0],  # blue
         [255, 255, 0],  # aqua
         [0, 255, 0],  # lime
-        [128, 0, 128],  # purple
-        [0, 0, 255],  # red
         [255, 0, 255],  # fuchsia
-        [0, 128, 0],  # green
-        [128, 128, 0],  # teal
-        [0, 0, 128],  # maroon
-        [0, 128, 128],  # olive
         [0, 255, 255],  # yellow
+        [128, 0, 128],  # purple
+        [255, 0, 0],  # blue
+        [0, 0, 255],  # red    
+        [0, 128, 0],  # green        
+        [0, 128, 128],  # olive     
     ]
+
 
 class Tracker:  ####################################
     
@@ -95,7 +95,7 @@ class Tracker:  ####################################
             # Update tracker
             self.ok, self.bbox = self.tracker.update(self.frame)
             # Calculate Frames per second (FPS)
-            fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+            self.fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
             # Draw bounding box
             if self.ok:
                 # Tracking success
@@ -111,16 +111,7 @@ class Tracker:  ####################################
                     self.Sett_offsett_from_ref_bbox()
                 elif delta_drop.get() == "Senter screen":
                     self.Sett_offsett_from_senter_screen()
-                
-           # else :
-                # Tracking failure
-                #cv2.putText(self.frame, "Tracking failure detected", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255),2)
-
-            # Display tracker type on frame
-            #cv2.putText(self.frame, self.tracker_type + " Tracker", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 1, (50,170,50),2)
-            # Display FPS on frame
-            #cv2.putText(self.frame, "FPS : " + str(int(fps)), (80,120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
-            
+                            
             root.after(tms, self.Run)
     
      
@@ -128,8 +119,6 @@ class Tracker:  ####################################
         #self.click_new_bbox()
         self.tracker_running = True
         self.Run()
-        #show_frames_one()
-        #self.show_frames()
     
     def Stop_tracker(self):
         self.tracker_running = False
@@ -145,9 +134,9 @@ class Tracker:  ####################################
         self.centerYrefBox = int(self.refBox[1]+(self.refBox[3] / 2))
     
     def Sett_offsett_from_ref_bbox(self):
-        # Refbox + centerpoint
-        cv2.rectangle(self.frame, self.refP1, self.refP2, (0,0,255), 2, 1)
-        cv2.rectangle(self.frame, (self.centerXrefBox, self.centerYrefBox), (self.centerXrefBox,self.centerYrefBox), (0,0,255), 6, 1) # Centerpoint
+        # centerpoint
+        self.cRefP1 = (self.centerXrefBox, self.centerYrefBox)
+        self.cRefP2 = (self.centerXrefBox, self.centerYrefBox)
         # Delta
         self.dx = float(self.centerXrefBox - self.centerXbbox)
         self.dy = float(self.centerYbbox - self.centerYrefBox)
@@ -166,11 +155,11 @@ class Tracker:  ####################################
         
     def Sett_offsett_from_senter_screen(self):
          # Center frame + point
-        refP1 = (int(self.centerFrameX - self.refBox[2]/2) , int(self.centerFrameY - self.refBox[3]/2)) 
-        refP2 = (int(self.centerFrameX + self.refBox[2]/2) , int(self.centerFrameY + self.refBox[3]/2))
-        cv2.rectangle(self.frame, refP1, refP2, (0,0,255), 2, 1) 
-        cv2.rectangle(self.frame, (self.centerFrameX, self.centerFrameY), (self.centerFrameX, self.centerFrameY), (0,0,255), 6, 1)
-        
+        self.refP1 = (int(self.centerFrameX - self.refBox[2]/2) , int(self.centerFrameY - self.refBox[3]/2)) 
+        self.refP2 = (int(self.centerFrameX + self.refBox[2]/2) , int(self.centerFrameY + self.refBox[3]/2))
+        # Centerpoint
+        self.cRefP1 = (self.centerFrameX, self.centerFrameY)
+        self.cRefP2 = (self.centerFrameX, self.centerFrameY)
         # Delta
         self.dx = float(self.centerXbbox - self.centerFrameX)
         self.dy = float(self.centerFrameY - self.centerYbbox)
@@ -179,15 +168,31 @@ class Tracker:  ####################################
             
 ##############################
 
-def show_frames_one():
-    
+def show_frames_one():    
     ok, frame = cap.read() 
     if ok:
+        j = 25
         for obj in t:                
             if obj.tracker_running:
-                    cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=2)
+                 # Display bbox:
+                cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=1)
+                 # Display refbox:
+                cv2.rectangle(frame, obj.refP1, obj.refP2, (0,0,255), 2, 1 )
+                 # Display centerpoint refbox:
+                cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, (0,0,255), 2, 3)
+                 # Display tracker type on frame:
+                cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
+                 # Display FPS on frame:
+                cv2.putText(frame, "FPS : " + str(int(obj.fps)), (180,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1) 
                 
-        cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)   #A???
+                j+=25
+            else :
+                #Tracking failure
+                cv2.putText(frame, "Tracking failure detected", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255),2)
+                
+        cv2.putText(frame, "Settbox", (500,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 1)  
+             
+        cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(cv2image).resize((800, 600))
         imgtk = ImageTk.PhotoImage(image = img)       
         label_vid_1.imgtk = imgtk
@@ -227,7 +232,7 @@ def Stop_all_trackers():
         
 def Update_statusbar():
     if len(t) == 1:
-        statusbar_1.config(text = "Delta T1:\t" + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
+        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
     if len(t) == 2:
         statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
         statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +"\t x: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
