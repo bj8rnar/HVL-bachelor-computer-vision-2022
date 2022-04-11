@@ -1,4 +1,6 @@
-#------------------TEST FOR Å SJÅ OM EG KAN OPPDATERE GITHUB-----------------
+
+# Test Kirieg
+
 
 from tkinter import *
 from tkinter import ttk
