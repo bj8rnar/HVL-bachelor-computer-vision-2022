@@ -1,3 +1,5 @@
+#------------------TEST FOR Å SJÅ OM EG KAN OPPDATERE GITHUB-----------------
+
 from tkinter import *
 from tkinter import ttk
 from tracemalloc import stop
