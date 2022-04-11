@@ -1,5 +1,7 @@
 
-# Test om det funker å sende fra meg Kirieg
+# Test Kirieg
+
+
 from tkinter import *
 from tkinter import ttk
 from tracemalloc import stop
