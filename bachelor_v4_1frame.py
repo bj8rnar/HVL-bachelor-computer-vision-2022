@@ -1,5 +1,4 @@
-
-# Test Kirieg
+# Test 2 Kirieg
 
 # Test Bj8rnar
 
@@ -38,7 +37,6 @@ color_list = [
         [0, 128, 128],  # olive
         [0, 255, 255],  # yellow
     ]
-
 
 class Tracker:  ####################################
     
@@ -273,7 +271,7 @@ def SendData():
     print("Client: " + data)
     
     root.after(2000, SendData)
-
+    
 ######################### - Calibrate Program - ################
 
 def Cal_Click():
@@ -281,8 +279,7 @@ def Cal_Click():
     workingFolder   = 'Cal_Images'
     #"*/Cal_Images"
     imageType       = 'JPG'
-    
-    
+       
     #Creat new window    
     Top = Toplevel()
     Top.title('Calibrate')
@@ -338,7 +335,6 @@ def Cal_Click():
         Error_status = Label(Top, text = "Error Status: "+ Error_value)
         Error_status.grid(row= 6, column=0)
 
-
         if not cap.isOpened():
             print("Cannot open camera")
             exit()
@@ -362,7 +358,7 @@ def Cal_Click():
             imgpil.close()
             Pic_taken()
          
-         
+      
         def Pic_taken():    
             #count pictures taken
             count = 0
@@ -517,6 +513,7 @@ if __name__ == "__main__":
     root.iconbitmap('favicon.ico')     # Setts icon for app
     root.geometry("1500x700")
         
+        
     #######     DEFINING Widgets:    #########
 
     # Frames define:
@@ -536,7 +533,6 @@ if __name__ == "__main__":
     statusbar_2 = Label(frame_0, text="Tr.2: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_3 = Label(frame_0, text="Tr.3: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
 
-
     # Buttons define:
     button_quit = Button(frame_0, text="Quit", padx=10, pady=2, command=root.quit)
     button_start_multiple = Button(frame_0, text="Start", padx=10, pady=2, command=lambda:click_multi_start())
@@ -548,11 +544,11 @@ if __name__ == "__main__":
 
     camera_drop_1 = ttk.Combobox(frame_0, value = [0,1,2,3,5])
     camera_drop_1.current(0)
-    tracker_drop_1 = ttk.Combobox(frame_0, value = ["0","MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
-    tracker_drop_1.current(2)
-    tracker_drop_2 = ttk.Combobox(frame_0, value = ["0","MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
-    tracker_drop_2.current(1)
-    tracker_drop_3 = ttk.Combobox(frame_0, value = ["0","MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
+    tracker_drop_1 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
+    tracker_drop_1.current(4)
+    tracker_drop_2 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
+    tracker_drop_2.current(5)
+    tracker_drop_3 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
     tracker_drop_3.current(0)
     delta_drop = ttk.Combobox(frame_0, value=["Marked object", "Senter screen"])
     delta_drop.current(0)
@@ -590,23 +586,18 @@ if __name__ == "__main__":
     statusbar_2.grid(row=9,column=0,columnspan=6, sticky=W+E)
     statusbar_3.grid(row=10,column=0,columnspan=6, sticky=W+E)
  
-    
-    
     #########################################
-  
+ 
+ 
+    ############# Commands ##################
+    
     t = []
     cap = cv2.VideoCapture(0)
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
-    #show_webcam()
     
     Update_statusbar()
     
     show_frames_one()
-    
-    
-    
-    # for obj in t:       
-    #     show_frames(obj.frame)
  
     
     
