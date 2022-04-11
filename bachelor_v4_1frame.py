@@ -13,7 +13,6 @@ import numpy as np
 import os
 import sys
 import glob
-from scipy.__config__ import show
 import socket
 
 #------------------------------------------------------------------
