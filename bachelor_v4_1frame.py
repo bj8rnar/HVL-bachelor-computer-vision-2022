@@ -1,7 +1,7 @@
 
 # Test Kirieg
 
-# Når ska me kjøpa sushi?
+# Test Bj8rnar
 
 from tkinter import *
 from tkinter import ttk
@@ -15,6 +15,14 @@ import os
 import sys
 import glob
 from scipy.__config__ import show
+import socket
+
+#------------------Client socket------------------------- #bj8rnar
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+
+host = 'localhost'     # IP
+port = 5433             # Port
+
 
 tms = 80    #Times pr milliscond
 color_list = [
@@ -219,6 +227,8 @@ def click_multi_start():
     for obj in t:
         obj.Start()
     
+    SendData()
+    
 def Camera_Select():
     return int(camera_drop_1.get())
 
@@ -251,13 +261,24 @@ def Update_statusbar():
 #     root.after(45, show_webcam)        
    #pass
 
+#------------------------------- Client socket------------------------------- 
+def SendData():
+    message = "X: " + str(t[0].dx) + "Y: " + str(t[0].dy) + "Z: " + str(t[0].dz)    # Må lage en standard posisjons string med header
 
+    # print("Client: " + message)
+    client_socket.sendto(message.encode(), (host,5432))
+    
+    data, server = client_socket.recvfrom(65535)
+    data = data.decode()
+    print("Client: " + data)
+    
+    root.after(2000, SendData)
 
 ######################### - Calibrate Program - ################
 
 def Cal_Click():
     
-    workingFolder   = 'C:/Users/egrut/PyProjects/Tkinter GUI/TrackGUI/tester/Cal_Images'
+    workingFolder   = 'Cal_Images'
     #"*/Cal_Images"
     imageType       = 'JPG'
     
@@ -493,7 +514,7 @@ if __name__ == "__main__":
     
     root = Tk()
     root.title("Computer vision position estimation") 
-    root.iconbitmap('c:/users/egrut/pyprojects/Tkinter GUI/TrackGUI/wrench.ico')     # Setts icon for app
+    root.iconbitmap('favicon.ico')     # Setts icon for app
     root.geometry("1500x700")
         
     #######     DEFINING Widgets:    #########
