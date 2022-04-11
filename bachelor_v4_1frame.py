@@ -13,8 +13,6 @@ import sys
 import glob
 from scipy.__config__ import show
 
-### TEST
-
 tms = 80    #Times pr milliscond
 color_list = [
         [255, 0, 0],  # blue
@@ -228,14 +226,14 @@ def Stop_all_trackers():
         
 def Update_statusbar():
     if len(t) == 1:
-        statusbar_1.config(text = "Delta T1:" + "\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
+        statusbar_1.config(text = "Delta T1:\t" + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
     if len(t) == 2:
-        statusbar_1.config(text = "Delta T1:" + "\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
-        statusbar_2.config(text = "Delta T2:" + "\t x: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
+        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
+        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +"\t x: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
     if len(t) == 3:
-        statusbar_1.config(text = "Delta T1:" + "\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
-        statusbar_2.config(text = "Delta T2:" + "\t x: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
-        statusbar_3.config(text = "Delta T3:" + "\t x: " + str(t[2].dx) + "\ty: " + str(t[2].dy) + "\tz: " + str("{:.3}".format(t[2].dz)) )
+        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
+        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +"\t x: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
+        statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +"\t x: " + str(t[2].dx) + "\ty: " + str(t[2].dy) + "\tz: " + str("{:.3}".format(t[2].dz)) )
         
     root.after(100,Update_statusbar)
         
