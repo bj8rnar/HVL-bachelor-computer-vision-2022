@@ -1,6 +1,6 @@
 
 # Test Kirieg
-# Test Stuvik svin
+# Test Stuvik svin2
 # Test Bj8rnar
 
 from tkinter import *
