@@ -1,6 +1,6 @@
 # Test 2 Kirieg
 
-# Test Bj8rnar
+# Når ska me kjøpa sushi?
 
 from tkinter import *
 from tkinter import ttk
