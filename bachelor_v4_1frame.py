@@ -28,13 +28,12 @@ tms = 80    #Times pr milliscond
 color_list = [
         [255, 255, 0],  # aqua
         [0, 255, 0],  # lime
-        [255, 0, 255],  # fuchsia
         [0, 255, 255],  # yellow
+        [255, 0, 255],  # fuchsia        
         [128, 0, 128],  # purple
         [255, 0, 0],  # blue
         [0, 0, 255],  # red    
-        [0, 128, 0],  # green        
-        [0, 128, 128],  # olive     
+        [0, 128, 0],  # green            
     ]
 
 
@@ -109,11 +108,10 @@ class Tracker:  ####################################
                 # Tracking success
                 self.p1 = (int(self.bbox[0]), int(self.bbox[1]))
                 self.p2 = (int(self.bbox[0] + self.bbox[2]), int(self.bbox[1] + self.bbox[3]))
-                cv2.rectangle(self.frame, self.p1, self.p2, (0,255,0), 2, 1)       
+                
                 # Centerpoint bbox
                 self.centerXbbox = int(self.bbox[0]+(self.bbox[2] / 2))
                 self.centerYbbox = int(self.bbox[1]+(self.bbox[3] / 2))
-                cv2.rectangle(self.frame, (self.centerXbbox,self.centerYbbox), (self.centerXbbox,self.centerYbbox), (0,255,0), 6, 1) #centerpoint  
                  
                 if delta_drop.get() == "Marked object":
                     self.Sett_offsett_from_ref_bbox()
@@ -179,7 +177,7 @@ class Tracker:  ####################################
 def show_frames_one():    
     ok, frame = cap.read() 
     if ok:
-        j = 25
+        j = 50
         for obj in t:                
             if obj.tracker_running:
                  # Display bbox:
@@ -198,7 +196,7 @@ def show_frames_one():
                 #Tracking failure
                 cv2.putText(frame, "Tracking failure detected", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255),2)
                 
-        cv2.putText(frame, "Settbox", (500,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 1)  
+        cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 1)  
              
         cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(cv2image).resize((800, 600))
@@ -217,7 +215,6 @@ def new_ROI():
     return bbox
 
 def click_multi_start():
-    #cap = cv2.VideoCapture(Camera_Select())  
     bbox = new_ROI()
     
     if tracker_drop_1.get() != "0":
@@ -252,17 +249,7 @@ def Update_statusbar():
         statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +"\t x: " + str(t[2].dx) + "\ty: " + str(t[2].dy) + "\tz: " + str("{:.3}".format(t[2].dz)) )
         
     root.after(100,Update_statusbar)
-        
-    #For å vise webcam i label_webcam
-# def show_webcam():
-#     frame = cap.read()[1]
-#     cv2image   = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-#     img   = Image.fromarray(cv2image).resize((480, 360))
-#     imgtk = ImageTk.PhotoImage(image = img)
-#     label_vid_1.imgtk = imgtk
-#     label_vid_1.configure(image=imgtk)
-#     root.after(45, show_webcam)        
-   #pass
+    
 
 #------------------------------- Client socket------------------------------- 
 def SendData():
@@ -277,8 +264,8 @@ def SendData():
     
     root.after(2000, SendData)
     
+    
 ######################### - Calibrate Program - ################
-
 def Cal_Click():
     
     workingFolder   = 'Cal_Images'
@@ -363,7 +350,6 @@ def Cal_Click():
             imgpil.close()
             Pic_taken()
          
-      
         def Pic_taken():    
             #count pictures taken
             count = 0
