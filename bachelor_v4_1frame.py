@@ -11,6 +11,8 @@ import sys
 import glob
 from scipy.__config__ import show
 
+### TEST
+
 tms = 80    #Times pr milliscond
 color_list = [
         [255, 0, 0],  # blue
