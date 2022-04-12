@@ -383,7 +383,7 @@ def SendData():
     
     
    
-#---------------------------------Calibrate Program---------------------------
+
 def Cal_Click():
     
     #Creat new window    
@@ -428,6 +428,7 @@ def Cal_Click():
         #Camera Frame and video capture
         Cal_label.frame_num = 0
         Cal_label.grid(row=0, column=0)
+        Vid_cap2 =cv2.VideoCapture(0)
         
         
         #Checking if the number of pictures are enough or good
@@ -446,13 +447,13 @@ def Cal_Click():
         Error_status.grid(row= 6, column=0)
 
 
-        if not cap.isOpened():
+        if not Vid_cap2.isOpened():
             print("Cannot open camera")
             exit()
             
         def show_frames():
             #Show video stream
-            cv2image= cv2.cvtColor(cap.read()[1],cv2.COLOR_BGR2RGB)
+            cv2image= cv2.cvtColor(Vid_cap2.read()[1],cv2.COLOR_BGR2RGB)
             Cal_img = Image.fromarray(cv2image)
             imgtk = ImageTk.PhotoImage(image = Cal_img)
             Cal_label.imgtk = imgtk
@@ -723,9 +724,8 @@ if __name__ == "__main__":
  
     #-------------------------------------------------------
  
- 
- 
- 
+
+
     #-------------------------------------------------------
     #-----------------Commands------------------------------
     
