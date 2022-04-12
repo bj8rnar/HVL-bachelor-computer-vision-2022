@@ -1,6 +1,5 @@
+# Test 8 Kirieg
 
-# Test Kirieg
-# Test Stuvik svin2
 # Test Bj8rnar
 
 from tkinter import *
@@ -10,37 +9,55 @@ from turtle import update        # To use combobox
 from PIL import ImageTk, Image
 from click import command
 import cv2
+from cv2 import getTickCount
 import numpy as np
 import os
 import sys
 import glob
-from scipy.__config__ import show
+import socket
+
+
+
+#------------------------------------------------------------------
+#------------------Client socket------------------------- @bj8rnar
+
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+
+host = 'localhost'     # IP
+port = 5433             # Port
+#------------------------------------------------------------------
+
+
+
+
+#------------------Variables---------------------------------------
 
 tms = 80    #Times pr milliscond
-color_list = [
-        [255, 0, 0],  # blue
-        [255, 255, 0],  # aqua
-        [0, 255, 0],  # lime
-        [128, 0, 128],  # purple
-        [0, 0, 255],  # red
-        [255, 0, 255],  # fuchsia
-        [0, 128, 0],  # green
-        [128, 128, 0],  # teal
-        [0, 0, 128],  # maroon
-        [0, 128, 128],  # olive
-        [0, 255, 255],  # yellow
-    ]
 
+class Colors:
+    Aqua = [255, 255, 0]  
+    Lime = [0, 255, 0]  
+    Yellow = [0, 255, 255]
+    Fuchisa = [255, 0, 255]      
+    Purple = [128, 0, 128]
+    Blue = [255, 0, 0] 
+    Red = [0, 0, 255]   
+    Green = [0, 128, 0]
+    
 
-class Tracker:  ####################################
+#----------------------------------------------------------------
+#----------------Class Tracker-----------------------------------
+class Tracker:  
     
     def __init__(self, tracker_type, bbox, video_capture, color):
         
         self.bbox = bbox
         self.tracker_type = tracker_type 
-        self.cap = video_capture
-        self.tracker_running = False
+        self.cap = video_capture  
         self.color = color
+        self.tracker_running = False
+        self.error = False
+        self.warning = False
         
         self.dx = 0.0
         self.dy = 0.0
@@ -77,6 +94,17 @@ class Tracker:  ####################################
         if not self.ok:
             print ('Cannot read video file')
             sys.exit()
+        
+        ########## UNDISTORT ########### Comment out if using video.mp4
+        # # Undistort image
+        # h,  w = self.frame.shape[:2]
+        # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
+        # # undistort
+        # frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)  
+        # # crop the image
+        # x, y, w, h = roi
+        # frame = frame[y:y+h, x:x+w]
+        ##############################
 
         if delta_drop.get() == "Marked object":
             self.Create_offsett_from_ref_bbox()
@@ -87,51 +115,54 @@ class Tracker:  ####################################
     
         if self.tracker_running == True:
             self.ok = self.tracker.init(self.frame, self.bbox)
+            self.error = False
             
             # Read a new frame
             self.cap
             self.ok, self.frame = self.cap.read()
+            
+            ########## UNDISTORT ########### (Comment out if usen video.mp4)
+            # h,  w = self.frame.shape[:2]
+            # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))      
+            # # undistort
+            # frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)      
+            # # crop the image
+            # x, y, w, h = roi
+            # frame = frame[y:y+h, x:x+w]
+            ################################
                     
             # Start timer
             timer = cv2.getTickCount()
             # Update tracker
             self.ok, self.bbox = self.tracker.update(self.frame)
             # Calculate Frames per second (FPS)
-            fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+            self.fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
             # Draw bounding box
             if self.ok:
                 # Tracking success
                 self.p1 = (int(self.bbox[0]), int(self.bbox[1]))
                 self.p2 = (int(self.bbox[0] + self.bbox[2]), int(self.bbox[1] + self.bbox[3]))
-                cv2.rectangle(self.frame, self.p1, self.p2, (0,255,0), 2, 1)       
+                
                 # Centerpoint bbox
                 self.centerXbbox = int(self.bbox[0]+(self.bbox[2] / 2))
                 self.centerYbbox = int(self.bbox[1]+(self.bbox[3] / 2))
-                cv2.rectangle(self.frame, (self.centerXbbox,self.centerYbbox), (self.centerXbbox,self.centerYbbox), (0,255,0), 6, 1) #centerpoint  
                  
                 if delta_drop.get() == "Marked object":
                     self.Sett_offsett_from_ref_bbox()
                 elif delta_drop.get() == "Senter screen":
                     self.Sett_offsett_from_senter_screen()
+            else:
+                self.error= True
                 
-           # else :
-                # Tracking failure
-                #cv2.putText(self.frame, "Tracking failure detected", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255),2)
-
-            # Display tracker type on frame
-            #cv2.putText(self.frame, self.tracker_type + " Tracker", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 1, (50,170,50),2)
-            # Display FPS on frame
-            #cv2.putText(self.frame, "FPS : " + str(int(fps)), (80,120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
+            Error_timer()    
+            Error_detection()
             
             root.after(tms, self.Run)
-    
      
     def Start(self):       
         #self.click_new_bbox()
         self.tracker_running = True
         self.Run()
-        #show_frames_one()
-        #self.show_frames()
     
     def Stop_tracker(self):
         self.tracker_running = False
@@ -147,9 +178,9 @@ class Tracker:  ####################################
         self.centerYrefBox = int(self.refBox[1]+(self.refBox[3] / 2))
     
     def Sett_offsett_from_ref_bbox(self):
-        # Refbox + centerpoint
-        cv2.rectangle(self.frame, self.refP1, self.refP2, (0,0,255), 2, 1)
-        cv2.rectangle(self.frame, (self.centerXrefBox, self.centerYrefBox), (self.centerXrefBox,self.centerYrefBox), (0,0,255), 6, 1) # Centerpoint
+        # centerpoint
+        self.cRefP1 = (self.centerXrefBox, self.centerYrefBox)
+        self.cRefP2 = (self.centerXrefBox, self.centerYrefBox)
         # Delta
         self.dx = float(self.centerXrefBox - self.centerXbbox)
         self.dy = float(self.centerYbbox - self.centerYrefBox)
@@ -168,28 +199,48 @@ class Tracker:  ####################################
         
     def Sett_offsett_from_senter_screen(self):
          # Center frame + point
-        refP1 = (int(self.centerFrameX - self.refBox[2]/2) , int(self.centerFrameY - self.refBox[3]/2)) 
-        refP2 = (int(self.centerFrameX + self.refBox[2]/2) , int(self.centerFrameY + self.refBox[3]/2))
-        cv2.rectangle(self.frame, refP1, refP2, (0,0,255), 2, 1) 
-        cv2.rectangle(self.frame, (self.centerFrameX, self.centerFrameY), (self.centerFrameX, self.centerFrameY), (0,0,255), 6, 1)
-        
+        self.refP1 = (int(self.centerFrameX - self.refBox[2]/2) , int(self.centerFrameY - self.refBox[3]/2)) 
+        self.refP2 = (int(self.centerFrameX + self.refBox[2]/2) , int(self.centerFrameY + self.refBox[3]/2))
+        # Centerpoint
+        self.cRefP1 = (self.centerFrameX, self.centerFrameY)
+        self.cRefP2 = (self.centerFrameX, self.centerFrameY)
         # Delta
         self.dx = float(self.centerXbbox - self.centerFrameX)
         self.dy = float(self.centerFrameY - self.centerYbbox)
         self.dz = float(self.refBox[3] - self.bbox[3])
-    
+#---------------------------------------------------------------- 
             
-##############################
 
-def show_frames_one():
-    
+#----------------------------------------------------------------
+#----------------Interface GUI-----------------------------------
+
+def show_frames_one():    
     ok, frame = cap.read() 
     if ok:
+        j = 50
         for obj in t:                
             if obj.tracker_running:
-                    cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=2)
+                try:                
+                    # Display refbox:
+                    cv2.rectangle(frame, obj.refP1, obj.refP2, Colors.Red, 2, 1 )
+                    # Display bbox:
+                    cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=1)
+                    # Display centerpoint refbox:
+                    cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, Colors.Red, 2, 3)
+                    # Display tracker type on frame:
+                    cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
+                    # Display FPS on frame:
+                    cv2.putText(frame, "FPS : " + str(int(obj.fps)), (180,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1) 
                 
-        cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)   #A???
+                    j+=25
+                except:
+                    print("Error update tracker")
+                    obj.error = True
+                
+            
+        cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
+             
+        cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(cv2image).resize((800, 600))
         imgtk = ImageTk.PhotoImage(image = img)       
         label_vid_1.imgtk = imgtk
@@ -201,23 +252,26 @@ def new_ROI():
     ok, cv2_image = cap.read()
     if ok:
         bbox = cv2.selectROI(cv2_image)
-        statusbar_0.config(text = "Status:\t" + ": " + str(bbox))
         cv2.destroyWindow('ROI selector')
     return bbox
 
 def click_multi_start():
-    #cap = cv2.VideoCapture(Camera_Select())  
     bbox = new_ROI()
     
     if tracker_drop_1.get() != "0":
-        t.append(Tracker(tracker_drop_1.get(), bbox, cap, color_list[0]))
+        t.append(Tracker(tracker_drop_1.get(), bbox, cap, Colors.Aqua))
     if tracker_drop_2.get() != "0":
-        t.append(Tracker(tracker_drop_2.get(), bbox ,cap, color_list[1]))
+        t.append(Tracker(tracker_drop_2.get(), bbox ,cap, Colors.Lime))
     if tracker_drop_3.get() != "0":
-        t.append(Tracker(tracker_drop_3.get(), bbox ,cap, color_list[2]))
+        t.append(Tracker(tracker_drop_3.get(), bbox ,cap, Colors.Yellow))
         
     for obj in t:
         obj.Start()
+    
+    if t[0].tracker_running:
+        SendData()
+    
+    
     
 def Camera_Select():
     return int(camera_drop_1.get())
@@ -228,39 +282,109 @@ def Stop_all_trackers():
     t.clear()
         
 def Update_statusbar():
-    if len(t) == 1:
-        statusbar_1.config(text = "Delta T1:\t" + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
-    if len(t) == 2:
-        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
-        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +"\t x: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
-    if len(t) == 3:
-        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
-        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +"\t x: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
-        statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +"\t x: " + str(t[2].dx) + "\ty: " + str(t[2].dy) + "\tz: " + str("{:.3}".format(t[2].dz)) )
+    if len(t) > 0:
+        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +" \tx: " + str(round(t[0].dx)) + "\ty: " + str(round(t[0].dy)) + "\tz: " + str(round(t[0].dz)))
+    if len(t) > 1:
+        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +" \tx: " + str(round(t[1].dx)) + "\ty: " + str(round(t[1].dy)) + "\tz: " + str(round(t[1].dz)) )
+    if len(t) > 2:
+        statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +" \tx: " + str(round(t[2].dx)) + "\ty: " + str(round(t[2].dy)) + "\tz: " + str(round(t[2].dz)) )
         
-    root.after(100,Update_statusbar)
+    root.after(200,Update_statusbar)
+
+# Error indicator update
+def Update_Indicators(): 
+    if len(t) > 0:
+        if t[0].error:
+            Indicator_1.itemconfig(my_oval_1, fill="red")
+        elif t[0].warning & t[0].tracker_running:
+            Indicator_1.itemconfig(my_oval_1, fill="yellow")
+        elif t[0].tracker_running:
+            Indicator_1.itemconfig(my_oval_1, fill="green")
+        else:
+            Indicator_1.itemconfig(my_oval_1, fill="grey")
+    if len(t) > 1:
+        if t[1].error:
+            Indicator_2.itemconfig(my_oval_2, fill="red")
+        elif t[1].warning & t[1].tracker_running:
+            Indicator_2.itemconfig(my_oval_2, fill="yellow")
+        elif t[1].tracker_running:
+            Indicator_2.itemconfig(my_oval_2, fill="green")
+        else:
+            Indicator_2.itemconfig(my_oval_2, fill="grey")
+    if len(t) > 2:
+        if t[2].error:
+            Indicator_3.itemconfig(my_oval_3, fill="red")
+        elif t[2].warning & t[2].tracker_running:
+            Indicator_3.itemconfig(my_oval_3, fill="yellow")
+        elif t[2].tracker_running:
+            Indicator_3.itemconfig(my_oval_3, fill="green")
+        else:
+            Indicator_3.itemconfig(my_oval_3, fill="grey")
+    root.after(400, Update_Indicators)
+    
+#----Errordetection-----  
+def Error_timer():
+    global pre_dx, pre_dy, pre_dz
+    for obj in t:
+        pre_dx = obj.dx
+        pre_dy = obj.dy
+        pre_dz = obj.dz      
+    root.after(2000,Error_timer)
         
-    #For å vise webcam i label_webcam
-# def show_webcam():
-#     frame = cap.read()[1]
-#     cv2image   = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-#     img   = Image.fromarray(cv2image).resize((480, 360))
-#     imgtk = ImageTk.PhotoImage(image = img)
-#     label_vid_1.imgtk = imgtk
-#     label_vid_1.configure(image=imgtk)
-#     root.after(45, show_webcam)        
-   #pass
+def Error_detection():
+    for obj in t:   
+        if obj.dx >= (abs(pre_dx)+30):
+            obj.warning = True
+        if obj.dy >= (abs(pre_dy)+30):
+            obj.warning = True
+        if obj.dz >= (abs(pre_dz)+30):
+            obj.warning = True
+    root.after(1000,Error_detection)
+#---------------------  
+  
+def Output_control():
+    # Midlertidig output controll:
+    i=0; y=0; x=0; z=0; tracker=""
+    if len(t)>0:  
+        for obj in t:
+            if obj.tracker_running and not obj.error:
+                x += obj.dx
+                y += obj.dy
+                z += obj.dz
+                i += 1
+                tracker = tracker + "/" + obj.tracker_type[0:3]
+            else: i=1
+            
+            statusbar_0.config(text = "Output: T:"+tracker+";"+"\tx: " + str(round(x/i)) + "\ty: " + str(round(y/i)) + "\tz: " + str(round(z/i)))  #str("{:.4}".format(z/i)))
+    root.after(200, Output_control)
+    
+#----------------------------------------------------------------------------
+ 
+ 
+ 
+    
 
+#------------------------------- Client socket------------------------------- 
+def SendData():
+    message = "X: " + str(t[0].dx) + "Y: " + str(t[0].dy) + "Z: " + str(t[0].dz)    # Må lage en standard posisjons string med header
 
-
-######################### - Calibrate Program - ################
-
+    # print("Client: " + message)
+    client_socket.sendto(message.encode(), (host,5432))
+    
+    # data, server = client_socket.recvfrom(65535)          #For testing av utdata med server.
+    # data = data.decode()
+    # print("Client: " + data)
+    
+    root.after(2000, SendData)
+#-----------------------------------------------------------------------------    
+    
+    
+    
+    
+    
+   
+#---------------------------------Calibrate Program--------------------------- V.1.2
 def Cal_Click():
-    
-    workingFolder   = 'C:/Users/egrut/PyProjects/Tkinter GUI/TrackGUI/tester/Cal_Images'
-    #"*/Cal_Images"
-    imageType       = 'JPG'
-    
     
     #Creat new window    
     Top = Toplevel()
@@ -275,6 +399,9 @@ def Cal_Click():
     #Camera Frame 
     frame_Cal = LabelFrame(Top, text= "Camera", padx= 5, pady= 5 )
     frame_Cal.grid(row=0, column=2, rowspan= 8)
+
+    workingFolder = os.chdir("Cal_Images")
+
 
 
     def start_cam_cal():
@@ -301,6 +428,7 @@ def Cal_Click():
         #Camera Frame and video capture
         Cal_label.frame_num = 0
         Cal_label.grid(row=0, column=0)
+        Vid_cap2 =cv2.VideoCapture(0)
         
         #Checking if the number of pictures are enough or good
         Ant_pic_err_lab1 = Label(Top, text="")
@@ -318,13 +446,13 @@ def Cal_Click():
         Error_status.grid(row= 6, column=0)
 
 
-        if not cap.isOpened():
+        if not Vid_cap2.isOpened():
             print("Cannot open camera")
             exit()
             
         def show_frames():
             #Show video stream
-            cv2image= cv2.cvtColor(cap.read()[1],cv2.COLOR_BGR2RGB)
+            cv2image= cv2.cvtColor(Vid_cap2.read()[1],cv2.COLOR_BGR2RGB)
             Cal_img = Image.fromarray(cv2image)
             imgtk = ImageTk.PhotoImage(image = Cal_img)
             Cal_label.imgtk = imgtk
@@ -337,25 +465,33 @@ def Cal_Click():
             file_name = f"{Cal_label.frame_num}.jpg"
             imagetk = Cal_label.imgtk
             imgpil = ImageTk.getimage( imagetk )
-            imgpil.save(workingFolder + file_name, imageType)
+            imgpil.save( file_name, "PNG")
             imgpil.close()
             Pic_taken()
          
          
         def Pic_taken():    
             #count pictures taken
+            Fold_Path = os.getcwd()
             count = 0
-            for path in os.listdir(workingFolder):
-                if os.path.isfile(os.path.join(workingFolder, path)):
-                    count += 1              
+            for path in os.listdir(Fold_Path):
+                if os.path.isfile(os.path.join(Fold_Path, path)):
+                    count += 1
+                        
             label_Pic_counter = Label(Top, text="Pictures: "+ str(count))
             label_Pic_counter.grid(row= 3, column= 0)
         
+
         #Calibrate function
-        def Start_Calib():                 
+        def Start_Calib():
+                 
             nRows = 9
             nCols = 6
             dimension = 33 #- mm
+            print(os.getcwd)
+            #Cal_Folder = os.chdir("/Calibration")
+            workingFolder   = os.getcwd()
+            imageType       = 'jpg'
             #------------------------------------------
 
             # termination criteria
@@ -396,6 +532,8 @@ def Cal_Click():
 
             if len(images) < 9:
                 sys.exit()
+
+
 
             else:
                 nPatternFound = 0
@@ -444,9 +582,10 @@ def Cal_Click():
                 # crop the image
                 x,y,w,h = roi
                 dst = dst[y:y+h, x:x+w]
-                cv2.imwrite("/Calibration/calibresult.png",dst)
-                np.savetxt("Calibration/cameraMatrixWebcam.txt", mtx, delimiter=',')
-                np.savetxt("Calibration/cameraDistortionWebcam.txt", dist, delimiter=',')
+                os.chdir('../Calibration')
+                cv2.imwrite("calibresult.png",dst)
+                np.savetxt("cameraMatrix.npy", mtx, delimiter=',')
+                np.savetxt("distortionMatrix.npy", dist, delimiter=',')
                 
                 #Finding the distortion value
                 mean_error = 0
@@ -478,8 +617,7 @@ def Cal_Click():
         show_frames()
         Pic_taken()
     Top.mainloop()
-#Calibrate end
-###############################################################
+#--------------------------Calibrate end--------------------------
 
 
 
@@ -487,16 +625,18 @@ def Cal_Click():
 
 
 
-############# - MAIN - ########################################
+#-----------------------------------------------------------------
+#-----------------------------MAIN--------------------------------
               
 if __name__ == "__main__":
     
     root = Tk()
     root.title("Computer vision position estimation") 
-    root.iconbitmap('c:/users/egrut/pyprojects/Tkinter GUI/TrackGUI/wrench.ico')     # Setts icon for app
+    root.iconbitmap('favicon.ico')     # Setts icon for app
     root.geometry("1500x700")
         
-    #######     DEFINING Widgets:    #########
+        
+    #-----------DEFINING Widgets:---------------
 
     # Frames define:
     frame_0 = LabelFrame(root, text="", padx=10, pady=10)
@@ -510,11 +650,19 @@ if __name__ == "__main__":
     label_Delta_method = Label(frame_0, text="Delta method")
 
     # Statusbar define:
-    statusbar_0 = Label(frame_0, text="Ref:: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
+    statusbar_0 = Label(frame_0, text="Output: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_1 = Label(frame_0, text="Tr.1: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_2 = Label(frame_0, text="Tr.2: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_3 = Label(frame_0, text="Tr.3: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
-
+    
+    # Indicators Canvas
+    Indicator_1 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
+    Indicator_2 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
+    Indicator_3 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
+    
+    my_oval_1 = Indicator_1.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
+    my_oval_2 = Indicator_2.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
+    my_oval_3 = Indicator_3.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
 
     # Buttons define:
     button_quit = Button(frame_0, text="Quit", padx=10, pady=2, command=root.quit)
@@ -527,18 +675,17 @@ if __name__ == "__main__":
 
     camera_drop_1 = ttk.Combobox(frame_0, value = [0,1,2,3,5])
     camera_drop_1.current(0)
-    tracker_drop_1 = ttk.Combobox(frame_0, value = ["0","MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
-    tracker_drop_1.current(2)
-    tracker_drop_2 = ttk.Combobox(frame_0, value = ["0","MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
-    tracker_drop_2.current(1)
-    tracker_drop_3 = ttk.Combobox(frame_0, value = ["0","MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
+    tracker_drop_1 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
+    tracker_drop_1.current(4)
+    tracker_drop_2 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
+    tracker_drop_2.current(5)
+    tracker_drop_3 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
     tracker_drop_3.current(0)
     delta_drop = ttk.Combobox(frame_0, value=["Marked object", "Senter screen"])
     delta_drop.current(0)
+    #---------------------------------------------------------
 
-    ##########################################
-
-    #########   PLACING ON ROOT:   ###########
+    #---------------PLACING ON ROOT:--------------------------
     # Label plassering:
     label_camera.grid(row=0,column=0)
     label_window_1.grid(row=1,column=0)
@@ -568,25 +715,29 @@ if __name__ == "__main__":
     statusbar_1.grid(row=8,column=0,columnspan=6, sticky=W+E)
     statusbar_2.grid(row=9,column=0,columnspan=6, sticky=W+E)
     statusbar_3.grid(row=10,column=0,columnspan=6, sticky=W+E)
+    
+    # Canvas Indicator:
+    Indicator_1.grid(row=8,column=7)
+    Indicator_2.grid(row=9,column=7)
+    Indicator_3.grid(row=10,column=7)
  
+    #-------------------------------------------------------
+ 
+ 
+ 
+ 
+    #-------------------------------------------------------
+    #-----------------Commands------------------------------
     
     
-    #########################################
-  
     t = []
     cap = cv2.VideoCapture(0)
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
-    #show_webcam()
     
-    Update_statusbar()
     
     show_frames_one()
-    
-    
-    
-    # for obj in t:       
-    #     show_frames(obj.frame)
- 
-    
+    Update_statusbar()
+    Update_Indicators()
+    Output_control()
     
     root.mainloop()
