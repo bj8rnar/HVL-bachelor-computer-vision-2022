@@ -21,23 +21,27 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
 host = 'localhost'     # IP
 port = 5433             # Port
+#------------------------------------------------------------------
 
 
+
+#------------------Variables---------------------------------------
 tms = 80    #Times pr milliscond
 
-color_list = [
-        [255, 255, 0],  # aqua
-        [0, 255, 0],  # lime
-        [0, 255, 255],  # yellow
-        [255, 0, 255],  # fuchsia        
-        [128, 0, 128],  # purple
-        [255, 0, 0],  # blue
-        [0, 0, 255],  # red    
-        [0, 128, 0],  # green            
-    ]
+class Colors:
+    Aqua = [255, 255, 0]  
+    Lime = [0, 255, 0]  
+    Yellow = [0, 255, 255]
+    Fuchisa = [255, 0, 255]      
+    Purple = [128, 0, 128]
+    Blue = [255, 0, 0] 
+    Red = [0, 0, 255]   
+    Green = [0, 128, 0]  
 
+#----------------------------------------------------------------
+#----------------Class Tracker-----------------------------------
 
-class Tracker:  ####################################
+class Tracker:  
     
     def __init__(self, tracker_type, bbox, video_capture, color):
         
@@ -183,9 +187,9 @@ def show_frames_one():
                  # Display bbox:
                 cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=1)
                  # Display refbox:
-                cv2.rectangle(frame, obj.refP1, obj.refP2, (0,0,255), 2, 1 )
+                cv2.rectangle(frame, obj.refP1, obj.refP2, Colors.Red, 2, 1 )
                  # Display centerpoint refbox:
-                cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, (0,0,255), 2, 3)
+                cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, Colors.Red, 2, 3)
                  # Display tracker type on frame:
                 cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
                  # Display FPS on frame:
@@ -194,9 +198,9 @@ def show_frames_one():
                 j+=25
             else :
                 #Tracking failure
-                cv2.putText(frame, "Tracking failure detected", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255),2)
+                cv2.putText(frame, "Tracking failure detected", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, Colors.Red,2)
                 
-        cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 1)  
+        cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
              
         cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(cv2image).resize((800, 600))
@@ -218,11 +222,11 @@ def click_multi_start():
     bbox = new_ROI()
     
     if tracker_drop_1.get() != "0":
-        t.append(Tracker(tracker_drop_1.get(), bbox, cap, color_list[0]))
+        t.append(Tracker(tracker_drop_1.get(), bbox, cap, Colors.Aqua))
     if tracker_drop_2.get() != "0":
-        t.append(Tracker(tracker_drop_2.get(), bbox ,cap, color_list[1]))
+        t.append(Tracker(tracker_drop_2.get(), bbox ,cap, Colors.Lime))
     if tracker_drop_3.get() != "0":
-        t.append(Tracker(tracker_drop_3.get(), bbox ,cap, color_list[2]))
+        t.append(Tracker(tracker_drop_3.get(), bbox ,cap, Colors.Yellow))
         
     for obj in t:
         obj.Start()
@@ -263,6 +267,7 @@ def SendData():
     print("Client: " + data)
     
     root.after(2000, SendData)
+#-----------------------------------------------------------------------------    
     
     
 ######################### - Calibrate Program - ################
