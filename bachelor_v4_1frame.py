@@ -386,10 +386,6 @@ def SendData():
 #---------------------------------Calibrate Program---------------------------
 def Cal_Click():
     
-    workingFolder   = 'Cal_Images'
-    #"*/Cal_Images"
-    imageType       = 'JPG'
-       
     #Creat new window    
     Top = Toplevel()
     Top.title('Calibrate')
@@ -403,6 +399,9 @@ def Cal_Click():
     #Camera Frame 
     frame_Cal = LabelFrame(Top, text= "Camera", padx= 5, pady= 5 )
     frame_Cal.grid(row=0, column=2, rowspan= 8)
+
+    workingFolder = os.chdir("Cal_Images")
+
 
 
     def start_cam_cal():
@@ -430,6 +429,7 @@ def Cal_Click():
         Cal_label.frame_num = 0
         Cal_label.grid(row=0, column=0)
         
+        
         #Checking if the number of pictures are enough or good
         Ant_pic_err_lab1 = Label(Top, text="")
         Ant_pic_err_lab1.grid(row=10, column=0, columnspan=3)
@@ -444,6 +444,7 @@ def Cal_Click():
         Error_value = ""
         Error_status = Label(Top, text = "Error Status: "+ Error_value)
         Error_status.grid(row= 6, column=0)
+
 
         if not cap.isOpened():
             print("Cannot open camera")
@@ -464,24 +465,33 @@ def Cal_Click():
             file_name = f"{Cal_label.frame_num}.jpg"
             imagetk = Cal_label.imgtk
             imgpil = ImageTk.getimage( imagetk )
-            imgpil.save(workingFolder + file_name, imageType)
+            imgpil.save( file_name, "PNG")
             imgpil.close()
             Pic_taken()
          
+         
         def Pic_taken():    
             #count pictures taken
+            Fold_Path = os.getcwd()
             count = 0
-            for path in os.listdir(workingFolder):
-                if os.path.isfile(os.path.join(workingFolder, path)):
-                    count += 1              
+            for path in os.listdir(Fold_Path):
+                if os.path.isfile(os.path.join(Fold_Path, path)):
+                    count += 1
+                        
             label_Pic_counter = Label(Top, text="Pictures: "+ str(count))
             label_Pic_counter.grid(row= 3, column= 0)
         
+
         #Calibrate function
-        def Start_Calib():                 
+        def Start_Calib():
+                 
             nRows = 9
             nCols = 6
             dimension = 33 #- mm
+            print(os.getcwd)
+            #Cal_Folder = os.chdir("/Calibration")
+            workingFolder   = os.getcwd()
+            imageType       = 'jpg'
             #------------------------------------------
 
             # termination criteria
@@ -522,6 +532,8 @@ def Cal_Click():
 
             if len(images) < 9:
                 sys.exit()
+
+
 
             else:
                 nPatternFound = 0
@@ -570,9 +582,10 @@ def Cal_Click():
                 # crop the image
                 x,y,w,h = roi
                 dst = dst[y:y+h, x:x+w]
-                cv2.imwrite("/Calibration/calibresult.png",dst)
-                np.savetxt("Calibration/cameraMatrixWebcam.txt", mtx, delimiter=',')
-                np.savetxt("Calibration/cameraDistortionWebcam.txt", dist, delimiter=',')
+                os.chdir('../Calibration')
+                cv2.imwrite("calibresult.png",dst)
+                np.savetxt("cameraMatrix.npy", mtx, delimiter=',')
+                np.savetxt("distortionMatrix.npy", dist, delimiter=',')
                 
                 #Finding the distortion value
                 mean_error = 0
