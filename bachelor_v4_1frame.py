@@ -678,7 +678,7 @@ def Aruco():
         return np.array([x, y, z])
     
     #--- Get the camera calibration path
-    calib_path  = ""
+    calib_path  = "Calibration/"
     camera_matrix   = np.load(calib_path+'cameraMatrixWebcam.npy')
     camera_distortion   = np.load(calib_path+'cameraDistortionWebcam.npy')
 
