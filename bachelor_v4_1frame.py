@@ -1,4 +1,4 @@
-# Test 6 Kirieg
+# Test 7 Kirieg
 
 # Test Bj8rnar
 
@@ -16,7 +16,10 @@ import glob
 import socket
 
 
-#------------------Client socket------------------------- 
+
+#------------------------------------------------------------------
+#------------------Client socket------------------------- @bj8rnar
+
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
 host = 'localhost'     # IP
@@ -25,7 +28,9 @@ port = 5433             # Port
 
 
 
+
 #------------------Variables---------------------------------------
+
 tms = 80    #Times pr milliscond
 
 class Colors:
@@ -36,7 +41,8 @@ class Colors:
     Purple = [128, 0, 128]
     Blue = [255, 0, 0] 
     Red = [0, 0, 255]   
-    Green = [0, 128, 0]  
+    Green = [0, 128, 0]
+    
 
 #----------------------------------------------------------------
 #----------------Class Tracker-----------------------------------
@@ -46,9 +52,11 @@ class Tracker:
         
         self.bbox = bbox
         self.tracker_type = tracker_type 
-        self.cap = video_capture
-        self.tracker_running = False
+        self.cap = video_capture  
         self.color = color
+        self.tracker_running = False
+        self.error = False
+        self.warning = False
         
         self.dx = 0.0
         self.dy = 0.0
@@ -85,6 +93,17 @@ class Tracker:
         if not self.ok:
             print ('Cannot read video file')
             sys.exit()
+        
+        ########## UNDISTORT ########### Comment out if using video.mp4
+        # # Undistort image
+        # h,  w = self.frame.shape[:2]
+        # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
+        # # undistort
+        # frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)  
+        # # crop the image
+        # x, y, w, h = roi
+        # frame = frame[y:y+h, x:x+w]
+        ##############################
 
         if delta_drop.get() == "Marked object":
             self.Create_offsett_from_ref_bbox()
@@ -95,10 +114,21 @@ class Tracker:
     
         if self.tracker_running == True:
             self.ok = self.tracker.init(self.frame, self.bbox)
+            self.error = False
             
             # Read a new frame
             self.cap
             self.ok, self.frame = self.cap.read()
+            
+            ########## UNDISTORT ########### (Comment out if usen video.mp4)
+            # h,  w = self.frame.shape[:2]
+            # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))      
+            # # undistort
+            # frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)      
+            # # crop the image
+            # x, y, w, h = roi
+            # frame = frame[y:y+h, x:x+w]
+            ################################
                     
             # Start timer
             timer = cv2.getTickCount()
@@ -120,9 +150,12 @@ class Tracker:
                     self.Sett_offsett_from_ref_bbox()
                 elif delta_drop.get() == "Senter screen":
                     self.Sett_offsett_from_senter_screen()
-                            
+            else:
+                self.error= True
+                
+            #Error_detection()
+            
             root.after(tms, self.Run)
-    
      
     def Start(self):       
         #self.click_new_bbox()
@@ -185,22 +218,24 @@ def show_frames_one():
         j = 50
         for obj in t:                
             if obj.tracker_running:
-                 # Display bbox:
-                cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=1)
-                 # Display refbox:
-                cv2.rectangle(frame, obj.refP1, obj.refP2, Colors.Red, 2, 1 )
-                 # Display centerpoint refbox:
-                cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, Colors.Red, 2, 3)
-                 # Display tracker type on frame:
-                cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
-                 # Display FPS on frame:
-                cv2.putText(frame, "FPS : " + str(int(obj.fps)), (180,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1) 
+                try:                
+                    # Display refbox:
+                    cv2.rectangle(frame, obj.refP1, obj.refP2, Colors.Red, 2, 1 )
+                    # Display bbox:
+                    cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=1)
+                    # Display centerpoint refbox:
+                    cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, Colors.Red, 2, 3)
+                    # Display tracker type on frame:
+                    cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
+                    # Display FPS on frame:
+                    cv2.putText(frame, "FPS : " + str(int(obj.fps)), (180,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1) 
                 
-                j+=25
-            else :
-                #Tracking failure
-                cv2.putText(frame, "Tracking failure detected", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, Colors.Red,2)
+                    j+=25
+                except:
+                    print("Error update tracker")
+                    obj.error = True
                 
+            
         cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
              
         cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -232,7 +267,10 @@ def click_multi_start():
     for obj in t:
         obj.Start()
     
-    SendData()
+    if t[0].tracker_running:
+        SendData()
+    
+    
     
 def Camera_Select():
     return int(camera_drop_1.get())
@@ -243,18 +281,63 @@ def Stop_all_trackers():
     t.clear()
         
 def Update_statusbar():
-    if len(t) == 1:
-        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
-    if len(t) == 2:
-        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
-        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +"\t x: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
-    if len(t) == 3:
-        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +"\t x: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)) )
-        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +"\t x: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
-        statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +"\t x: " + str(t[2].dx) + "\ty: " + str(t[2].dy) + "\tz: " + str("{:.3}".format(t[2].dz)) )
+    if len(t) > 0:
+        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +" \tx: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)))
+    if len(t) > 1:
+        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +" \tx: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
+    if len(t) > 2:
+        statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +" \tx: " + str(t[2].dx) + "\ty: " + str(t[2].dy) + "\tz: " + str("{:.3}".format(t[2].dz)) )
         
     root.after(100,Update_statusbar)
+
+# Error indicator update
+def Update_Indicators(): 
+    if len(t) > 0:
+        if t[0].error:
+            Indicator_1.itemconfig(my_oval_1, fill="red")
+        elif t[0].warning & t[0].tracker_running:
+            Indicator_1.itemconfig(my_oval_1, fill="yellow")
+        elif t[0].tracker_running:
+            Indicator_1.itemconfig(my_oval_1, fill="green")
+        else:
+            Indicator_1.itemconfig(my_oval_1, fill="grey")
+    if len(t) > 1:
+        if t[1].error:
+            Indicator_2.itemconfig(my_oval_2, fill="red")
+        elif t[1].warning & t[1].tracker_running:
+            Indicator_2.itemconfig(my_oval_2, fill="yellow")
+        elif t[1].tracker_running:
+            Indicator_2.itemconfig(my_oval_2, fill="green")
+        else:
+            Indicator_2.itemconfig(my_oval_2, fill="grey")
+    if len(t) > 2:
+        if t[2].error:
+            Indicator_3.itemconfig(my_oval_3, fill="red")
+        elif t[2].warning & t[2].tracker_running:
+            Indicator_3.itemconfig(my_oval_3, fill="yellow")
+        elif t[2].tracker_running:
+            Indicator_3.itemconfig(my_oval_3, fill="green")
+        else:
+            Indicator_3.itemconfig(my_oval_3, fill="grey")
+    root.after(400, Update_Indicators)
+    
+# def Error_detection():
+#     for obj in t:
+#         if obj.error: 
+#             # statusbar_0.config(text="T1 Error!", fg= "red")
+#             #Indicator_1.itemconfig(my_oval_1, fill="red")
+#         #else: 
+#             #statusbar_0.config(text="OK", fg="black" )
+#            # Indicator_1.itemconfig(my_oval_1, fill="green")
+#             pass
+        
+#         #Indicator_2.itemconfig(my_oval_1, fill="red")
+#         #Indicator_3.itemconfig(my_oval_1, fill="red")
+    
+#     root.after(400,Error_detection)
 #----------------------------------------------------------------------------
+ 
+ 
  
     
 
@@ -271,6 +354,9 @@ def SendData():
     
     root.after(2000, SendData)
 #-----------------------------------------------------------------------------    
+    
+    
+    
     
     
    
@@ -532,6 +618,15 @@ if __name__ == "__main__":
     statusbar_1 = Label(frame_0, text="Tr.1: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_2 = Label(frame_0, text="Tr.2: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_3 = Label(frame_0, text="Tr.3: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
+    
+    # Indicators Canvas
+    Indicator_1 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
+    Indicator_2 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
+    Indicator_3 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
+    
+    my_oval_1 = Indicator_1.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
+    my_oval_2 = Indicator_2.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
+    my_oval_3 = Indicator_3.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
 
     # Buttons define:
     button_quit = Button(frame_0, text="Quit", padx=10, pady=2, command=root.quit)
@@ -584,8 +679,15 @@ if __name__ == "__main__":
     statusbar_1.grid(row=8,column=0,columnspan=6, sticky=W+E)
     statusbar_2.grid(row=9,column=0,columnspan=6, sticky=W+E)
     statusbar_3.grid(row=10,column=0,columnspan=6, sticky=W+E)
+    
+    # Canvas Indicator:
+    Indicator_1.grid(row=8,column=7)
+    Indicator_2.grid(row=9,column=7)
+    Indicator_3.grid(row=10,column=7)
  
     #-------------------------------------------------------
+ 
+ 
  
  
     #-------------------------------------------------------
@@ -596,10 +698,10 @@ if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
     
-    Update_statusbar()
     
     show_frames_one()
- 
+    Update_statusbar()
+    Update_Indicators()
     
     
     root.mainloop()
