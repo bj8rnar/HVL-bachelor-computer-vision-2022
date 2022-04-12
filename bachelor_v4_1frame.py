@@ -1,4 +1,4 @@
-# Test 7 Kirieg
+# Test 8 Kirieg
 
 # Test Bj8rnar
 
@@ -9,6 +9,7 @@ from turtle import update        # To use combobox
 from PIL import ImageTk, Image
 from click import command
 import cv2
+from cv2 import getTickCount
 import numpy as np
 import os
 import sys
@@ -153,7 +154,8 @@ class Tracker:
             else:
                 self.error= True
                 
-            #Error_detection()
+            Error_timer()    
+            Error_detection()
             
             root.after(tms, self.Run)
      
@@ -250,7 +252,6 @@ def new_ROI():
     ok, cv2_image = cap.read()
     if ok:
         bbox = cv2.selectROI(cv2_image)
-        statusbar_0.config(text = "Status:\t" + ": " + str(bbox))
         cv2.destroyWindow('ROI selector')
     return bbox
 
@@ -282,13 +283,13 @@ def Stop_all_trackers():
         
 def Update_statusbar():
     if len(t) > 0:
-        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +" \tx: " + str(t[0].dx) + "\ty: " + str(t[0].dy) + "\tz: " + str("{:.3}".format(t[0].dz)))
+        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +" \tx: " + str(round(t[0].dx)) + "\ty: " + str(round(t[0].dy)) + "\tz: " + str(round(t[0].dz)))
     if len(t) > 1:
-        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +" \tx: " + str(t[1].dx) + "\ty: " + str(t[1].dy) + "\tz: " + str("{:.3}".format(t[1].dz)) )
+        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +" \tx: " + str(round(t[1].dx)) + "\ty: " + str(round(t[1].dy)) + "\tz: " + str(round(t[1].dz)) )
     if len(t) > 2:
-        statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +" \tx: " + str(t[2].dx) + "\ty: " + str(t[2].dy) + "\tz: " + str("{:.3}".format(t[2].dz)) )
+        statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +" \tx: " + str(round(t[2].dx)) + "\ty: " + str(round(t[2].dy)) + "\tz: " + str(round(t[2].dz)) )
         
-    root.after(100,Update_statusbar)
+    root.after(200,Update_statusbar)
 
 # Error indicator update
 def Update_Indicators(): 
@@ -321,20 +322,42 @@ def Update_Indicators():
             Indicator_3.itemconfig(my_oval_3, fill="grey")
     root.after(400, Update_Indicators)
     
-# def Error_detection():
-#     for obj in t:
-#         if obj.error: 
-#             # statusbar_0.config(text="T1 Error!", fg= "red")
-#             #Indicator_1.itemconfig(my_oval_1, fill="red")
-#         #else: 
-#             #statusbar_0.config(text="OK", fg="black" )
-#            # Indicator_1.itemconfig(my_oval_1, fill="green")
-#             pass
+#----Errordetection-----  
+def Error_timer():
+    global pre_dx, pre_dy, pre_dz
+    for obj in t:
+        pre_dx = obj.dx
+        pre_dy = obj.dy
+        pre_dz = obj.dz      
+    root.after(2000,Error_timer)
         
-#         #Indicator_2.itemconfig(my_oval_1, fill="red")
-#         #Indicator_3.itemconfig(my_oval_1, fill="red")
+def Error_detection():
+    for obj in t:   
+        if obj.dx >= (abs(pre_dx)+30):
+            obj.warning = True
+        if obj.dy >= (abs(pre_dy)+30):
+            obj.warning = True
+        if obj.dz >= (abs(pre_dz)+30):
+            obj.warning = True
+    root.after(1000,Error_detection)
+#---------------------  
+  
+def Output_control():
+    # Midlertidig output controll:
+    i=0; y=0; x=0; z=0; tracker=""
+    if len(t)>0:  
+        for obj in t:
+            if obj.tracker_running and not obj.error:
+                x += obj.dx
+                y += obj.dy
+                z += obj.dz
+                i += 1
+                tracker = tracker + "/" + obj.tracker_type[0:3]
+            else: i=1
+            
+            statusbar_0.config(text = "Output: T:"+tracker+";"+"\tx: " + str(round(x/i)) + "\ty: " + str(round(y/i)) + "\tz: " + str(round(z/i)))  #str("{:.4}".format(z/i)))
+    root.after(200, Output_control)
     
-#     root.after(400,Error_detection)
 #----------------------------------------------------------------------------
  
  
@@ -614,7 +637,7 @@ if __name__ == "__main__":
     label_Delta_method = Label(frame_0, text="Delta method")
 
     # Statusbar define:
-    statusbar_0 = Label(frame_0, text="Ref:: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
+    statusbar_0 = Label(frame_0, text="Output: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_1 = Label(frame_0, text="Tr.1: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_2 = Label(frame_0, text="Tr.2: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_3 = Label(frame_0, text="Tr.3: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
@@ -702,6 +725,6 @@ if __name__ == "__main__":
     show_frames_one()
     Update_statusbar()
     Update_Indicators()
-    
+    Output_control()
     
     root.mainloop()
