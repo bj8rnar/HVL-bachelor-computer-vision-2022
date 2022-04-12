@@ -1,4 +1,4 @@
-# Test 5 Kirieg
+# Test 6 Kirieg
 
 # Test Bj8rnar
 
@@ -21,23 +21,26 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
 host = 'localhost'     # IP
 port = 5433             # Port
+#------------------------------------------------------------------
 
 
+
+#------------------Variables---------------------------------------
 tms = 80    #Times pr milliscond
 
-color_list = [
-        [255, 255, 0],  # aqua
-        [0, 255, 0],  # lime
-        [0, 255, 255],  # yellow
-        [255, 0, 255],  # fuchsia        
-        [128, 0, 128],  # purple
-        [255, 0, 0],  # blue
-        [0, 0, 255],  # red    
-        [0, 128, 0],  # green            
-    ]
+class Colors:
+    Aqua = [255, 255, 0]  
+    Lime = [0, 255, 0]  
+    Yellow = [0, 255, 255]
+    Fuchisa = [255, 0, 255]      
+    Purple = [128, 0, 128]
+    Blue = [255, 0, 0] 
+    Red = [0, 0, 255]   
+    Green = [0, 128, 0]  
 
-
-class Tracker:  ####################################
+#----------------------------------------------------------------
+#----------------Class Tracker-----------------------------------
+class Tracker:  
     
     def __init__(self, tracker_type, bbox, video_capture, color):
         
@@ -170,9 +173,11 @@ class Tracker:  ####################################
         self.dx = float(self.centerXbbox - self.centerFrameX)
         self.dy = float(self.centerFrameY - self.centerYbbox)
         self.dz = float(self.refBox[3] - self.bbox[3])
-    
+#---------------------------------------------------------------- 
             
-##############################
+
+#----------------------------------------------------------------
+#----------------Interface GUI-----------------------------------
 
 def show_frames_one():    
     ok, frame = cap.read() 
@@ -183,9 +188,9 @@ def show_frames_one():
                  # Display bbox:
                 cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=1)
                  # Display refbox:
-                cv2.rectangle(frame, obj.refP1, obj.refP2, (0,0,255), 2, 1 )
+                cv2.rectangle(frame, obj.refP1, obj.refP2, Colors.Red, 2, 1 )
                  # Display centerpoint refbox:
-                cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, (0,0,255), 2, 3)
+                cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, Colors.Red, 2, 3)
                  # Display tracker type on frame:
                 cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
                  # Display FPS on frame:
@@ -194,9 +199,9 @@ def show_frames_one():
                 j+=25
             else :
                 #Tracking failure
-                cv2.putText(frame, "Tracking failure detected", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255),2)
+                cv2.putText(frame, "Tracking failure detected", (80,90), cv2.FONT_HERSHEY_SIMPLEX, 0.75, Colors.Red,2)
                 
-        cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 1)  
+        cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
              
         cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(cv2image).resize((800, 600))
@@ -218,11 +223,11 @@ def click_multi_start():
     bbox = new_ROI()
     
     if tracker_drop_1.get() != "0":
-        t.append(Tracker(tracker_drop_1.get(), bbox, cap, color_list[0]))
+        t.append(Tracker(tracker_drop_1.get(), bbox, cap, Colors.Aqua))
     if tracker_drop_2.get() != "0":
-        t.append(Tracker(tracker_drop_2.get(), bbox ,cap, color_list[1]))
+        t.append(Tracker(tracker_drop_2.get(), bbox ,cap, Colors.Lime))
     if tracker_drop_3.get() != "0":
-        t.append(Tracker(tracker_drop_3.get(), bbox ,cap, color_list[2]))
+        t.append(Tracker(tracker_drop_3.get(), bbox ,cap, Colors.Yellow))
         
     for obj in t:
         obj.Start()
@@ -249,6 +254,8 @@ def Update_statusbar():
         statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +"\t x: " + str(t[2].dx) + "\ty: " + str(t[2].dy) + "\tz: " + str("{:.3}".format(t[2].dz)) )
         
     root.after(100,Update_statusbar)
+#----------------------------------------------------------------------------
+ 
     
 
 #------------------------------- Client socket------------------------------- 
@@ -263,9 +270,11 @@ def SendData():
     # print("Client: " + data)
     
     root.after(2000, SendData)
+#-----------------------------------------------------------------------------    
     
     
-######################### - Calibrate Program - ################
+   
+#---------------------------------Calibrate Program---------------------------
 def Cal_Click():
     
     workingFolder   = 'Cal_Images'
@@ -486,8 +495,7 @@ def Cal_Click():
         show_frames()
         Pic_taken()
     Top.mainloop()
-#Calibrate end
-###############################################################
+#--------------------------Calibrate end--------------------------
 
 
 
@@ -495,7 +503,8 @@ def Cal_Click():
 
 
 
-############# - MAIN - ########################################
+#-----------------------------------------------------------------
+#-----------------------------MAIN--------------------------------
               
 if __name__ == "__main__":
     
@@ -505,7 +514,7 @@ if __name__ == "__main__":
     root.geometry("1500x700")
         
         
-    #######     DEFINING Widgets:    #########
+    #-----------DEFINING Widgets:---------------
 
     # Frames define:
     frame_0 = LabelFrame(root, text="", padx=10, pady=10)
@@ -543,10 +552,9 @@ if __name__ == "__main__":
     tracker_drop_3.current(0)
     delta_drop = ttk.Combobox(frame_0, value=["Marked object", "Senter screen"])
     delta_drop.current(0)
+    #---------------------------------------------------------
 
-    ##########################################
-
-    #########   PLACING ON ROOT:   ###########
+    #---------------PLACING ON ROOT:--------------------------
     # Label plassering:
     label_camera.grid(row=0,column=0)
     label_window_1.grid(row=1,column=0)
@@ -577,10 +585,12 @@ if __name__ == "__main__":
     statusbar_2.grid(row=9,column=0,columnspan=6, sticky=W+E)
     statusbar_3.grid(row=10,column=0,columnspan=6, sticky=W+E)
  
-    #########################################
+    #-------------------------------------------------------
  
  
-    ############# Commands ##################
+    #-------------------------------------------------------
+    #-----------------Commands------------------------------
+    
     
     t = []
     cap = cv2.VideoCapture(0)
