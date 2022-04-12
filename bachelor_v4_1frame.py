@@ -1,4 +1,4 @@
-# Test 5 Kirieg
+# Test 6 Kirieg
 
 # Test Bj8rnar
 
@@ -40,7 +40,6 @@ class Colors:
 
 #----------------------------------------------------------------
 #----------------Class Tracker-----------------------------------
-
 class Tracker:  
     
     def __init__(self, tracker_type, bbox, video_capture, color):
@@ -174,9 +173,11 @@ class Tracker:
         self.dx = float(self.centerXbbox - self.centerFrameX)
         self.dy = float(self.centerFrameY - self.centerYbbox)
         self.dz = float(self.refBox[3] - self.bbox[3])
-    
+#---------------------------------------------------------------- 
             
-##############################
+
+#----------------------------------------------------------------
+#----------------Interface GUI-----------------------------------
 
 def show_frames_one():    
     ok, frame = cap.read() 
@@ -253,6 +254,8 @@ def Update_statusbar():
         statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +"\t x: " + str(t[2].dx) + "\ty: " + str(t[2].dy) + "\tz: " + str("{:.3}".format(t[2].dz)) )
         
     root.after(100,Update_statusbar)
+#----------------------------------------------------------------------------
+ 
     
 
 #------------------------------- Client socket------------------------------- 
@@ -270,7 +273,8 @@ def SendData():
 #-----------------------------------------------------------------------------    
     
     
-######################### - Calibrate Program - ################
+   
+#---------------------------------Calibrate Program---------------------------
 def Cal_Click():
     
     workingFolder   = 'Cal_Images'
@@ -491,8 +495,7 @@ def Cal_Click():
         show_frames()
         Pic_taken()
     Top.mainloop()
-#Calibrate end
-###############################################################
+#--------------------------Calibrate end--------------------------
 
 
 
@@ -500,7 +503,8 @@ def Cal_Click():
 
 
 
-############# - MAIN - ########################################
+#-----------------------------------------------------------------
+#-----------------------------MAIN--------------------------------
               
 if __name__ == "__main__":
     
@@ -510,7 +514,7 @@ if __name__ == "__main__":
     root.geometry("1500x700")
         
         
-    #######     DEFINING Widgets:    #########
+    #-----------DEFINING Widgets:---------------
 
     # Frames define:
     frame_0 = LabelFrame(root, text="", padx=10, pady=10)
@@ -548,10 +552,9 @@ if __name__ == "__main__":
     tracker_drop_3.current(0)
     delta_drop = ttk.Combobox(frame_0, value=["Marked object", "Senter screen"])
     delta_drop.current(0)
+    #---------------------------------------------------------
 
-    ##########################################
-
-    #########   PLACING ON ROOT:   ###########
+    #---------------PLACING ON ROOT:--------------------------
     # Label plassering:
     label_camera.grid(row=0,column=0)
     label_window_1.grid(row=1,column=0)
@@ -582,10 +585,12 @@ if __name__ == "__main__":
     statusbar_2.grid(row=9,column=0,columnspan=6, sticky=W+E)
     statusbar_3.grid(row=10,column=0,columnspan=6, sticky=W+E)
  
-    #########################################
+    #-------------------------------------------------------
  
  
-    ############# Commands ##################
+    #-------------------------------------------------------
+    #-----------------Commands------------------------------
+    
     
     t = []
     cap = cv2.VideoCapture(0)
