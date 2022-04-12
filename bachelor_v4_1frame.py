@@ -678,9 +678,9 @@ def Aruco():
         return np.array([x, y, z])
     
     #--- Get the camera calibration path
-    calib_path  = "Calibration/"
-    camera_matrix   = np.load(calib_path+'cameraMatrixWebcam.npy')
-    camera_distortion   = np.load(calib_path+'cameraDistortionWebcam.npy')
+    calib_path  = 'Calibration/'
+    camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.npy')
+    camera_distortion   = np.loadtxt(calib_path+'distortionMatrix.npy')
 
     #--- 180 deg rotation matrix around the x axis
     R_flip  = np.zeros((3,3), dtype=np.float32)
@@ -761,6 +761,9 @@ def Aruco():
 
         #--- Display the frame
         #cv2.imshow('frame', frame)
+        
+        #--- Vis bilde
+        
 
 
 
