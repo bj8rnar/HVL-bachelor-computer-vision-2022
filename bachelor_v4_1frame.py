@@ -586,8 +586,8 @@ def Cal_Click():
                 dst = dst[y:y+h, x:x+w]
                 os.chdir('../Calibration')
                 cv2.imwrite("calibresult.png",dst)
-                np.savetxt("cameraMatrix.npy", mtx, delimiter=',')
-                np.savetxt("distortionMatrix.npy", dist, delimiter=',')
+                np.savetxt("cameraMatrix.txt", mtx, delimiter=',')
+                np.savetxt("distortionMatrix.txt", dist, delimiter=',')
                 
                 #Finding the distortion value
                 mean_error = 0
@@ -639,24 +639,6 @@ def Aruco():
         I = np.identity(3, dtype=R.dtype)
         n = np.linalg.norm(I - shouldBeIdentity)
         return n < 1e-6
-    
-    def rotationMatrixToEulerAngles(R):
-        assert (isRotationMatrix(R))
-
-        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-
-        singular = sy < 1e-6
-
-        if not singular:
-            x = math.atan2(R[2, 1], R[2, 2])
-            y = math.atan2(-R[2, 0], sy)
-            z = math.atan2(R[1, 0], R[0, 0])
-        else:
-            x = math.atan2(-R[1, 2], R[1, 1])
-            y = math.atan2(-R[2, 0], sy)
-            z = 0
-
-        return np.array([x, y, z])
 
     #--- kalkulerer rotasjonsmatrise til eulers
     def rotationMatrixToEulerAngles(R):
