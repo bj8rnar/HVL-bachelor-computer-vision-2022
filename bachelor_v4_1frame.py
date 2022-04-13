@@ -1,8 +1,6 @@
-# Test 8 Kirieg
-
+# Test 9 Kirieg
 # Test Bj8rnar
 
-from http.client import OK
 from tkinter import *
 from tkinter import ttk
 from tracemalloc import stop
@@ -19,10 +17,13 @@ import socket
 import time, math
 import cv2.aruco as aruco
 
+global arucoRunning
+global trackRunning 
+arucoRunning = False
+trackRunning = False
 
 #------------------------------------------------------------------
 #------------------Client socket------------------------- @bj8rnar
-
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
 host = 'localhost'     # IP
@@ -33,7 +34,6 @@ port = 5433             # Port
 
 
 #------------------Variables---------------------------------------
-
 tms = 80    #Times pr milliscond
 
 class Colors:
@@ -114,7 +114,8 @@ class Tracker:
             self.Create_offsett_from_senter_screen()
         
     def Run(self):
-    
+        global trackRunning
+        trackRunning = True
         if self.tracker_running == True:
             self.ok = self.tracker.init(self.frame, self.bbox)
             self.error = False
@@ -210,43 +211,183 @@ class Tracker:
         self.dx = float(self.centerXbbox - self.centerFrameX)
         self.dy = float(self.centerFrameY - self.centerYbbox)
         self.dz = float(self.refBox[3] - self.bbox[3])
+        
+        
 #---------------------------------------------------------------- 
             
+            
+            
+#-----------------------------------------------------------------
+#------------------------------Aruco------------------------------
+class Aruco:   
+    def __init__(self, video_capture):    
+        #--- definerer tag
+        self.cap = video_capture
+        self.id_to_find  = 3
+        self.marker_size  = 10 #- [cm]
 
+        #--- Get the camera calibration path
+        calib_path  = 'Calibration/'
+        self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
+        self.camera_distortion   = np.loadtxt(calib_path+'distortionMatrix.txt', delimiter=',')
+
+        #--- 180 deg rotation matrix around the x axis
+        self.R_flip  = np.zeros((3,3), dtype=np.float32)
+        self.R_flip[0,0] = 1.0
+        self.R_flip[1,1] =-1.0
+        self.R_flip[2,2] =-1.0
+
+        #--- Define the aruco dictionary
+        #aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
+        self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
+        #aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
+        self.parameters  = aruco.DetectorParameters_create()
+
+        #-- Set the camera size as the one it was calibrated with
+        #self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        #self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+        #-- Font for the text in the image
+        self.font = cv2.FONT_HERSHEY_PLAIN
+        
+        #--- Validerer rotasjonsmatrise
+    def isRotationMatrix(self,R):
+        Rt = np.transpose(R)
+        shouldBeIdentity = np.dot(Rt, R)
+        I = np.identity(3, dtype=R.dtype)
+        n = np.linalg.norm(I - shouldBeIdentity)
+        return n < 1e-6
+
+        #--- kalkulerer rotasjonsmatrise til eulers
+    def rotationMatrixToEulerAngles(self,R):
+        assert (self.isRotationMatrix(R))
+
+        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+
+        singular = sy < 1e-6
+
+        if not singular:
+            x = math.atan2(R[2, 1], R[2, 2])
+            y = math.atan2(-R[2, 0], sy)
+            z = math.atan2(R[1, 0], R[0, 0])
+        else:
+            x = math.atan2(-R[1, 2], R[1, 1])
+            y = math.atan2(-R[2, 0], sy)
+            z = 0
+
+        return np.array([x, y, z])
+
+     
+    def Aruco_run(self):        
+        if not trackRunning:
+            global arucoRunning
+            arucoRunning = True
+            ret, self.frame = self.cap.read()
+
+            #-- Convert in gray scale
+            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY) #-- remember, OpenCV stores color images in Blue, Green, Red
+
+            #-- Find all the aruco markers in the image
+            corners, ids, rejected = aruco.detectMarkers(image=gray, dictionary=self.aruco_dict, parameters=self.parameters,
+                                    cameraMatrix=self.camera_matrix, distCoeff=self.camera_distortion)
+            
+            if ids is not None and ids[0] == self.id_to_find:
+                
+                #-- ret = [rvec, tvec, ?]
+                #-- array of rotation and position of each marker in camera frame
+                #-- rvec = [[rvec_1], [rvec_2], ...]    attitude of the marker respect to camera frame
+                #-- tvec = [[tvec_1], [tvec_2], ...]    position of the marker in camera frame
+                ret = aruco.estimatePoseSingleMarkers(corners, self.marker_size, self.camera_matrix, self.camera_distortion)
+
+                #-- Unpack the output, get only the first
+                rvec, tvec = ret[0][0,0,:], ret[1][0,0,:]
+
+                #-- Draw the detected marker and put a reference frame over it
+                aruco.drawDetectedMarkers(self.frame, corners)
+                aruco.drawAxis(self.frame, self.camera_matrix, self.camera_distortion, rvec, tvec, 10)
+
+                #-- Print the tag position in camera frame
+                str_position = "MARKER Position x=%4.0f  y=%4.0f  z=%4.0f"%(tvec[0], tvec[1], tvec[2])
+                cv2.putText(self.frame, str_position, (0, 50), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+                #-- Obtain the rotation matrix tag->camera
+                R_ct    = np.matrix(cv2.Rodrigues(rvec)[0])
+                R_tc    = R_ct.T
+
+                #-- Get the attitude in terms of euler 321 (Needs to be flipped first)
+                roll_marker, pitch_marker, yaw_marker = self.rotationMatrixToEulerAngles(self.R_flip*R_tc)
+
+                #-- Print the marker's attitude respect to camera frame
+                str_attitude = "MARKER Attitude r=%4.0f  p=%4.0f  y=%4.0f"%(math.degrees(roll_marker),math.degrees(pitch_marker),
+                                    math.degrees(yaw_marker))
+                cv2.putText(self.frame, str_attitude, (0, 80), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+                #-- Now get Position and attitude f the camera respect to the marker
+                pos_camera = -R_tc*np.matrix(tvec).T
+
+                str_position = "CAMERA Position x=%4.0f  y=%4.0f  z=%4.0f"%(pos_camera[0], pos_camera[1], pos_camera[2])
+                cv2.putText(self.frame, str_position, (0, 110), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+                #-- Get the attitude of the camera respect to the frame
+                roll_camera, pitch_camera, yaw_camera = self.rotationMatrixToEulerAngles(self.R_flip*R_tc)
+                str_attitude = "CAMERA Attitude r=%4.0f  p=%4.0f  y=%4.0f"%(math.degrees(roll_camera),math.degrees(pitch_camera),
+                                    math.degrees(yaw_camera))
+                cv2.putText(self.frame, str_attitude, (0, 140), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                
+            if ret:
+                cv2image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+                img = Image.fromarray(cv2image).resize((1024, 720))
+                imgtk = ImageTk.PhotoImage(image = img)       
+                label_vid_1.imgtk = imgtk
+                label_vid_1.configure(image=imgtk)
+            
+            root.after(tms, self.Aruco_run)
+
+def Aruco_Click():
+    Stop_all_trackers()
+    a = Aruco(cap)
+    a.Aruco_run()          
+
+#----------------------Aruco END--------------------------------       
+        
+        
+        
 #----------------------------------------------------------------
 #----------------Interface GUI-----------------------------------
 
-def show_frames_one():    
-    ok, frame = cap.read() 
-    if ok:
-        j = 50
-        for obj in t:                
-            if obj.tracker_running:
-                try:                
-                    # Display refbox:
-                    cv2.rectangle(frame, obj.refP1, obj.refP2, Colors.Red, 2, 1 )
-                    # Display bbox:
-                    cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=1)
-                    # Display centerpoint refbox:
-                    cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, Colors.Red, 2, 3)
-                    # Display tracker type on frame:
-                    cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
-                    # Display FPS on frame:
-                    cv2.putText(frame, "FPS : " + str(int(obj.fps)), (180,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1) 
+def show_frames_one():
+        
+    if not arucoRunning:
+        ok, frame = cap.read() 
+        if ok:
+            j = 50
+            for obj in t:                
+                if obj.tracker_running:
+                    try:                
+                        # Display refbox:
+                        cv2.rectangle(frame, obj.refP1, obj.refP2, Colors.Red, 2, 1 )
+                        # Display bbox:
+                        cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=1)
+                        # Display centerpoint refbox:
+                        cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, Colors.Red, 2, 3)
+                        # Display tracker type on frame:
+                        cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
+                        # Display FPS on frame:
+                        cv2.putText(frame, "FPS : " + str(int(obj.fps)), (180,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1) 
+                    
+                        j+=25
+                    except:
+                        print("Error update tracker")
+                        obj.error = True
+                    
                 
-                    j+=25
-                except:
-                    print("Error update tracker")
-                    obj.error = True
+            cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
                 
-            
-        cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
-             
-        cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(cv2image).resize((800, 600))
-        imgtk = ImageTk.PhotoImage(image = img)       
-        label_vid_1.imgtk = imgtk
-        label_vid_1.configure(image=imgtk)
+            cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(cv2image).resize((1024, 720))
+            imgtk = ImageTk.PhotoImage(image = img)       
+            label_vid_1.imgtk = imgtk
+            label_vid_1.configure(image=imgtk)
     
     root.after(tms, show_frames_one)
 
@@ -258,6 +399,9 @@ def new_ROI():
     return bbox
 
 def click_multi_start():
+    global arucoRunning
+    arucoRunning = False
+    
     bbox = new_ROI()
     
     if tracker_drop_1.get() != "0":
@@ -273,8 +417,7 @@ def click_multi_start():
     if t[0].tracker_running:
         SendData()
     
-    
-    
+       
 def Camera_Select():
     return int(camera_drop_1.get())
 
@@ -282,6 +425,8 @@ def Stop_all_trackers():
     for obj in t:
         obj.Stop_tracker()
     t.clear()
+    global trackRunning
+    trackRunning=False
         
 def Update_statusbar():
     if len(t) > 0:
@@ -384,8 +529,8 @@ def SendData():
     
     
     
-   
-
+#------------------------------------------------------------------------ 
+#------------------------Calibrering-------------------------------------
 def Cal_Click():
     
     #Creat new window    
@@ -430,7 +575,7 @@ def Cal_Click():
         #Camera Frame and video capture
         Cal_label.frame_num = 0
         Cal_label.grid(row=0, column=0)
-        Vid_cap2 =cv2.VideoCapture(0)
+        
         
         
         #Checking if the number of pictures are enough or good
@@ -449,13 +594,13 @@ def Cal_Click():
         Error_status.grid(row= 6, column=0)
 
 
-        if not Vid_cap2.isOpened():
+        if not cap.isOpened():
             print("Cannot open camera")
             exit()
             
         def show_frames():
             #Show video stream
-            cv2image= cv2.cvtColor(Vid_cap2.read()[1],cv2.COLOR_BGR2RGB)
+            cv2image= cv2.cvtColor(cap.read()[1],cv2.COLOR_BGR2RGB)
             Cal_img = Image.fromarray(cv2image)
             imgtk = ImageTk.PhotoImage(image = Cal_img)
             Cal_label.imgtk = imgtk
@@ -624,129 +769,6 @@ def Cal_Click():
 
 
 
-
-#------------------------------Aruco------------------------------
-
-def Aruco():
-    
-    #--- definerer tag
-    id_to_find  = 3
-    marker_size  = 10 #- [cm]
-
-    #--- Validerer rotasjonsmatrise
-    def isRotationMatrix(R):
-        Rt = np.transpose(R)
-        shouldBeIdentity = np.dot(Rt, R)
-        I = np.identity(3, dtype=R.dtype)
-        n = np.linalg.norm(I - shouldBeIdentity)
-        return n < 1e-6
-
-    #--- kalkulerer rotasjonsmatrise til eulers
-    def rotationMatrixToEulerAngles(R):
-        assert (isRotationMatrix(R))
-
-        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-
-        singular = sy < 1e-6
-
-        if not singular:
-            x = math.atan2(R[2, 1], R[2, 2])
-            y = math.atan2(-R[2, 0], sy)
-            z = math.atan2(R[1, 0], R[0, 0])
-        else:
-            x = math.atan2(-R[1, 2], R[1, 1])
-            y = math.atan2(-R[2, 0], sy)
-            z = 0
-
-        return np.array([x, y, z])
-    
-    #--- Get the camera calibration path
-    calib_path  = 'Calibration/'
-    camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
-    camera_distortion   = np.loadtxt(calib_path+'distortionMatrix.txt', delimiter=',')
-
-    #--- 180 deg rotation matrix around the x axis
-    R_flip  = np.zeros((3,3), dtype=np.float32)
-    R_flip[0,0] = 1.0
-    R_flip[1,1] =-1.0
-    R_flip[2,2] =-1.0
-
-    #--- Define the aruco dictionary
-    #aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
-    aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
-    #aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
-    parameters  = aruco.DetectorParameters_create()
-
-    #-- Set the camera size as the one it was calibrated with
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-
-    #-- Font for the text in the image
-    font = cv2.FONT_HERSHEY_PLAIN
-    
-    while True:
-
-        #-- Read the camera frame
-        ret, frame = cap.read()
-        
-
-        #-- Convert in gray scale
-        gray    = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #-- remember, OpenCV stores color images in Blue, Green, Red
-
-        #-- Find all the aruco markers in the image
-        corners, ids, rejected = aruco.detectMarkers(image=gray, dictionary=aruco_dict, parameters=parameters,
-                                cameraMatrix=camera_matrix, distCoeff=camera_distortion)
-        
-        if ids is not None and ids[0] == id_to_find:
-            
-            #-- ret = [rvec, tvec, ?]
-            #-- array of rotation and position of each marker in camera frame
-            #-- rvec = [[rvec_1], [rvec_2], ...]    attitude of the marker respect to camera frame
-            #-- tvec = [[tvec_1], [tvec_2], ...]    position of the marker in camera frame
-            ret = aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, camera_distortion)
-
-            #-- Unpack the output, get only the first
-            rvec, tvec = ret[0][0,0,:], ret[1][0,0,:]
-
-            #-- Draw the detected marker and put a reference frame over it
-            aruco.drawDetectedMarkers(frame, corners)
-            aruco.drawAxis(frame, camera_matrix, camera_distortion, rvec, tvec, 10)
-
-            #-- Print the tag position in camera frame
-            str_position = "MARKER Position x=%4.0f  y=%4.0f  z=%4.0f"%(tvec[0], tvec[1], tvec[2])
-            cv2.putText(frame, str_position, (0, 100), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
-            #-- Obtain the rotation matrix tag->camera
-            R_ct    = np.matrix(cv2.Rodrigues(rvec)[0])
-            R_tc    = R_ct.T
-
-            #-- Get the attitude in terms of euler 321 (Needs to be flipped first)
-            roll_marker, pitch_marker, yaw_marker = rotationMatrixToEulerAngles(R_flip*R_tc)
-
-            #-- Print the marker's attitude respect to camera frame
-            str_attitude = "MARKER Attitude r=%4.0f  p=%4.0f  y=%4.0f"%(math.degrees(roll_marker),math.degrees(pitch_marker),
-                                math.degrees(yaw_marker))
-            cv2.putText(frame, str_attitude, (0, 150), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
-
-            #-- Now get Position and attitude f the camera respect to the marker
-            pos_camera = -R_tc*np.matrix(tvec).T
-
-            str_position = "CAMERA Position x=%4.0f  y=%4.0f  z=%4.0f"%(pos_camera[0], pos_camera[1], pos_camera[2])
-            cv2.putText(frame, str_position, (0, 200), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
-            #-- Get the attitude of the camera respect to the frame
-            roll_camera, pitch_camera, yaw_camera = rotationMatrixToEulerAngles(R_flip*R_tc)
-            str_attitude = "CAMERA Attitude r=%4.0f  p=%4.0f  y=%4.0f"%(math.degrees(roll_camera),math.degrees(pitch_camera),
-                                math.degrees(yaw_camera))
-            cv2.putText(frame, str_attitude, (0, 250), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
-        
-
-        #--- Display the frame
-        #cv2.imshow('frame', frame)
-        
-        #--- Vis bilde
         
 
 
@@ -796,7 +818,7 @@ if __name__ == "__main__":
     button_start_multiple = Button(frame_0, text="Start", padx=10, pady=2, command=lambda:click_multi_start())
     button_stop_all = Button(frame_0, text="Stop All", padx=10, pady=2, command=lambda:Stop_all_trackers())
     button_calibrate = Button(frame_0, text="Calibrate", padx=10, pady=2, command=lambda:[Cal_Click(),Stop_all_trackers()])
-    button_aruco = Button(frame_0, text ='Aruco', padx=10, pady=2, command=lambda:[Aruco(),Stop_all_trackers()])
+    button_aruco = Button(frame_0, text ='Aruco', padx=10, pady=2, command=lambda:[Aruco_Click()])
     
     label_vid_1 = Label(frame_1)
     label_vid_1.grid(row=0,column=0)
