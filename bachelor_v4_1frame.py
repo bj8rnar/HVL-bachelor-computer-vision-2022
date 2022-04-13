@@ -2,6 +2,7 @@
 
 # Test Bj8rnar
 
+from http.client import OK
 from tkinter import *
 from tkinter import ttk
 from tracemalloc import stop
@@ -740,6 +741,7 @@ def Aruco():
                                 math.degrees(yaw_camera))
             cv2.putText(frame, str_attitude, (0, 250), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
+        
 
         #--- Display the frame
         #cv2.imshow('frame', frame)
