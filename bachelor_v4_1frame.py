@@ -23,7 +23,7 @@ arucoRunning = False
 trackRunning = False
 
 #------------------------------------------------------------------
-#------------------Client socket------------------------- @bj8rnar
+#------------------Client socket-----------------------------------
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
 host = 'localhost'     # IP
@@ -32,7 +32,7 @@ port = 5433             # Port
 
 
 
-
+#------------------------------------------------------------------
 #------------------Variables---------------------------------------
 tms = 80    #Times pr milliscond
 
@@ -213,7 +213,7 @@ class Tracker:
         self.dz = float(self.refBox[3] - self.bbox[3])
         
         
-#---------------------------------------------------------------- 
+#--------------------------Tracker end-------------------------------------- 
             
             
             
@@ -505,13 +505,13 @@ def Output_control():
             statusbar_0.config(text = "Output: T:"+tracker+";"+"\tx: " + str(round(x/i)) + "\ty: " + str(round(y/i)) + "\tz: " + str(round(z/i)))  #str("{:.4}".format(z/i)))
     root.after(200, Output_control)
     
-#----------------------------------------------------------------------------
+#--------------------------------GUI end----------------------------------------
  
  
  
     
 
-#------------------------------- Client socket------------------------------- 
+#-------------------------------Client socket------------------------------- 
 def SendData():
     message = "X: " + str(t[0].dx) + "Y: " + str(t[0].dy) + "Z: " + str(t[0].dz)    # Må lage en standard posisjons string med header
 
@@ -523,14 +523,14 @@ def SendData():
     # print("Client: " + data)
     
     root.after(2000, SendData)
-#-----------------------------------------------------------------------------    
+#-------------------------------Clien socket end-----------------------------    
     
     
     
     
     
 #------------------------------------------------------------------------ 
-#------------------------Calibrering-------------------------------------
+#------------------------Calibration-------------------------------------
 def Cal_Click():
     
     #Creat new window    
@@ -765,7 +765,7 @@ def Cal_Click():
         show_frames()
         Pic_taken()
     Top.mainloop()
-#--------------------------Calibrate end--------------------------
+#--------------------------Calibration end--------------------------
 
 
 
@@ -891,3 +891,5 @@ if __name__ == "__main__":
     Output_control()
     
     root.mainloop()
+    
+#---------------------------Main end----------------------------
