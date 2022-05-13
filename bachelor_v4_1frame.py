@@ -1,7 +1,7 @@
 # Test 9 Kirieg
 # Test Bj8rnar
 
-# eirik kan ikkje push
+# eirik kan ikkje push, jo det kan eg!
 
 from tkinter import *
 from tkinter import ttk
