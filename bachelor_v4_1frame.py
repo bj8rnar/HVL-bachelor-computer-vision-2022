@@ -1,8 +1,6 @@
 # Test 9 Kirieg
 # Test Bj8rnar
 
-# eirik kan ikkje push, jo det kan eg!
-
 from tkinter import *
 from tkinter import ttk
 from tracemalloc import stop
@@ -81,12 +79,6 @@ class Tracker:
             self.tracker = cv2.legacy.TrackerMOSSE_create()
         if self.tracker_type == "CSRT":
             self.tracker = cv2.legacy.TrackerCSRT_create()
-        if self.tracker_type == 'DaSiamRPN':
-            params = cv2.TrackerDaSiamRPN_Params()
-            params.model = "model/DaSiamRPN/dasiamrpn_model.onnx"
-            params.kernel_r1 = "model/DaSiamRPN/dasiamrpn_kernel_r1.onnx"
-            params.kernel_cls1 = "model/DaSiamRPN/dasiamrpn_kernel_cls1.onnx"
-            self.tracker = cv2.TrackerDaSiamRPN_create(params)  
 
         # Exit if video not opened.
         if not self.cap.isOpened():
@@ -357,7 +349,7 @@ def Aruco_Click():
 #----------------------------------------------------------------
 #--------------------------GUI-----------------------------------
 
-def show_frames_one():
+def Show_frames_one():
         
     if not arucoRunning:
         ok, frame = cap.read() 
@@ -391,20 +383,20 @@ def show_frames_one():
             label_vid_1.imgtk = imgtk
             label_vid_1.configure(image=imgtk)
     
-    root.after(tms, show_frames_one)
+    root.after(tms, Show_frames_one)
 
-def new_ROI():
+def New_ROI():
     ok, cv2_image = cap.read()
     if ok:
         bbox = cv2.selectROI(cv2_image)
         cv2.destroyWindow('ROI selector')
     return bbox
 
-def click_multi_start():
+def Click_multi_start():
     global arucoRunning
     arucoRunning = False
     
-    bbox = new_ROI()
+    bbox = New_ROI()
     
     if tracker_drop_1.get() != "0":
         t.append(Tracker(tracker_drop_1.get(), bbox, cap, Colors.Aqua))
@@ -540,7 +532,7 @@ def Cal_Click():
     Top.title('Calibrate')
     #start camera button
     global start_cam_cal_btn
-    start_cam_cal_btn = Button(Top, text= "Start Camera", command= lambda: start_cam_cal())
+    start_cam_cal_btn = Button(Top, text= "Start Camera", command= lambda: Start_cam_cal())
     start_cam_cal_btn.grid(row=0, column=0, padx= 10)
     #Exit Button 
     exit_top_btn = Button(Top,text="Exit", command=lambda:Top.destroy())
@@ -553,7 +545,7 @@ def Cal_Click():
 
 
 
-    def start_cam_cal():
+    def Start_cam_cal():
         #Start Camera button
         global start_cam_cal_btn
         start_cam_cal_btn = Button(Top, text= "Start Camera", state= DISABLED)
@@ -817,7 +809,7 @@ if __name__ == "__main__":
 
     # Buttons define:
     button_quit = Button(frame_0, text="Quit", padx=10, pady=2, command=root.quit)
-    button_start_multiple = Button(frame_0, text="Start", padx=10, pady=2, command=lambda:click_multi_start())
+    button_start_multiple = Button(frame_0, text="Start", padx=10, pady=2, command=lambda:Click_multi_start())
     button_stop_all = Button(frame_0, text="Stop All", padx=10, pady=2, command=lambda:Stop_all_trackers())
     button_calibrate = Button(frame_0, text="Calibrate", padx=10, pady=2, command=lambda:[Cal_Click(),Stop_all_trackers()])
     button_aruco = Button(frame_0, text ='Aruco', padx=10, pady=2, command=lambda:[Aruco_Click()])
@@ -827,11 +819,11 @@ if __name__ == "__main__":
 
     camera_drop_1 = ttk.Combobox(frame_0, value = [0,1,2,3,5])
     camera_drop_1.current(0)
-    tracker_drop_1 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
+    tracker_drop_1 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT"])
     tracker_drop_1.current(4)
-    tracker_drop_2 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
+    tracker_drop_2 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT"])
     tracker_drop_2.current(5)
-    tracker_drop_3 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT", "DaSiamRPN"])
+    tracker_drop_3 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT"])
     tracker_drop_3.current(0)
     delta_drop = ttk.Combobox(frame_0, value=["Marked object", "Senter screen"])
     delta_drop.current(0)
@@ -887,7 +879,7 @@ if __name__ == "__main__":
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
     
     
-    show_frames_one()
+    Show_frames_one()
     Update_statusbar()
     Update_Indicators()
     Output_control()
