@@ -1,6 +1,8 @@
 # Test 9 Kirieg
 # Test Bj8rnar
 
+# eirik kan ikkje push
+
 from tkinter import *
 from tkinter import ttk
 from tracemalloc import stop
