@@ -46,9 +46,17 @@ class Colors:
     Red = [0, 0, 255]   
     Green = [0, 128, 0]
     
+#------------------------------------------------------------------   
+#------------Undistort camera matrix-------------------------------
+#Get the camera calibration path  
+calib_path  = "Calibration/"
+mtx = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
+dist = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
+#------------------------------------------------------------------
 
-#----------------------------------------------------------------
-#----------------------Tracker-----------------------------------
+
+#------------------------------------------------------------------
+#----------------------Tracker-------------------------------------
 class Tracker:  
     
     def __init__(self, tracker_type, bbox, video_capture, color):
@@ -91,15 +99,15 @@ class Tracker:
             print ('Cannot read video file')
             sys.exit()
         
-        ########## UNDISTORT ########### Comment out if using video.mp4
-        # # Undistort image
-        # h,  w = self.frame.shape[:2]
-        # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
-        # # undistort
-        # frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)  
-        # # crop the image
-        # x, y, w, h = roi
-        # frame = frame[y:y+h, x:x+w]
+        ########## UNDISTORT ########### (Comment out if using test video.mp4)
+        # Undistort image
+        h,  w = self.frame.shape[:2]
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
+        # undistort
+        frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)  
+        # crop the image
+        x, y, w, h = roi
+        frame = frame[y:y+h, x:x+w]
         ##############################
 
         if delta_drop.get() == "Marked object":
@@ -119,13 +127,13 @@ class Tracker:
             self.ok, self.frame = self.cap.read()
             
             ########## UNDISTORT ########### (Comment out if usen video.mp4)
-            # h,  w = self.frame.shape[:2]
-            # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))      
-            # # undistort
-            # frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)      
-            # # crop the image
-            # x, y, w, h = roi
-            # frame = frame[y:y+h, x:x+w]
+            h,  w = self.frame.shape[:2]
+            newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))      
+            # undistort
+            frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)      
+            # crop the image
+            x, y, w, h = roi
+            frame = frame[y:y+h, x:x+w]
             ################################
                     
             # Start timer
@@ -350,8 +358,8 @@ def Aruco_Click():
 #----------------------------------------------------------------
 #--------------------------GUI-----------------------------------
 
-def Show_frames_one():
-        
+# Function that shows bbox and refbox from trackers on screen
+def Show_frames_one():    
     if not arucoRunning:
         ok, frame = cap.read() 
         if ok:
@@ -370,12 +378,11 @@ def Show_frames_one():
                         # Display FPS on frame:
                         cv2.putText(frame, "FPS : " + str(int(obj.fps)), (180,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1) 
                     
-                        j+=25
+                        j+=25   # Move text down screen if more trackers
                     except:
                         print("Error update tracker")
                         obj.error = True
                     
-                
             cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
                 
             cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -386,6 +393,7 @@ def Show_frames_one():
     
     root.after(tms, Show_frames_one)
 
+# Choose the Region of interest
 def New_ROI():
     ok, cv2_image = cap.read()
     if ok:
@@ -393,6 +401,7 @@ def New_ROI():
         cv2.destroyWindow('ROI selector')
     return bbox
 
+# Starts multiple selected trackers
 def Click_multi_start():
     global arucoRunning
     arucoRunning = False
@@ -735,7 +744,7 @@ def Cal_Click():
                 os.chdir('../Calibration')
                 cv2.imwrite("calibresult.png",dst)
                 np.savetxt("cameraMatrix.txt", mtx, delimiter=',')
-                np.savetxt("distortionMatrix.txt", dist, delimiter=',')
+                np.savetxt("cameraDistortion.txt", dist, delimiter=',')
                 
                 #Finding the distortion value
                 mean_error = 0
@@ -878,12 +887,16 @@ if __name__ == "__main__":
  
 
 
+
     #-------------------------------------------------------
     #-----------------Commands------------------------------
     
-    
+    # List of trackers
     t = []
-    cap = cv2.VideoCapture(0)
+    
+    # Default camerasource i no tracker selected
+    if len(t) == 0:
+        cap = cv2.VideoCapture(0)
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
     
     
