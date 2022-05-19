@@ -105,7 +105,7 @@ class Tracker:
         if delta_drop.get() == "Marked object":
             self.Create_offsett_from_ref_bbox()
         elif delta_drop.get() == "Senter screen":
-            self.Create_offsett_from_senter_screen()
+            self.Create_offsett_from_center_screen()
         
     def Run(self):
         global trackRunning
@@ -147,7 +147,7 @@ class Tracker:
                 if delta_drop.get() == "Marked object":
                     self.Sett_offsett_from_ref_bbox()
                 elif delta_drop.get() == "Senter screen":
-                    self.Sett_offsett_from_senter_screen()
+                    self.Sett_offsett_from_center_screen()
             else:
                 self.error= True
                 
@@ -155,7 +155,7 @@ class Tracker:
             Error_detection()
             
             root.after(tms, self.Run)
-     
+    # Start tracker 
     def Start(self):       
         #self.click_new_bbox()
         self.tracker_running = True
@@ -163,50 +163,51 @@ class Tracker:
     
     def Stop_tracker(self):
         self.tracker_running = False
-        
-    # Calculate offsett from the center og where det bbox was first sett:
+    
+
+    ## Calculate offsett from the center object and where det bbox was first sett:
     def Create_offsett_from_ref_bbox(self):
-         # Defining corner p1 and p2 for refferance box
+         # Defining corner p1 and p2 for refferancebox
         self.refBox = self.bbox
         self.refP1 = (int(self.refBox[0]), int(self.refBox[1]))
         self.refP2 = (int(self.refBox[0] + self.refBox[2]), int(self.refBox[1] + self.refBox[3]))
-        # Senter of refferenca Box:
+        # Center of refferencebox:
         self.centerXrefBox = int(self.refBox[0]+(self.refBox[2] / 2)) 
         self.centerYrefBox = int(self.refBox[1]+(self.refBox[3] / 2))
-    
+        
     def Sett_offsett_from_ref_bbox(self):
-        # centerpoint
+        # Create centerpoint refferencebox 
         self.cRefP1 = (self.centerXrefBox, self.centerYrefBox)
         self.cRefP2 = (self.centerXrefBox, self.centerYrefBox)
-        # Delta
+        # Uppdate delta/offset from between center refbox and bbox
         self.dx = float(self.centerXrefBox - self.centerXbbox)
         self.dy = float(self.centerYbbox - self.centerYrefBox)
         self.dz = float(self.refBox[3] - self.bbox[3])
 
-    # Calculate offsett from the senter of the screen
-    def Create_offsett_from_senter_screen(self):
+
+    ## Calculate offsett from the senter of screen
+    def Create_offsett_from_center_screen(self):
         # Refference to first bbox    
         self.refBox = self.bbox   
-        # Frame dimension
+        # Frame dimension:
         frameHeight = int(self.frame.shape[0])
         frameWidth = int(self.frame.shape[1])
-        # Center of screen:
+        # Finds center of screen:
         self.centerFrameY = int(frameHeight/2)
-        self.centerFrameX = int(frameWidth/2)
+        self.centerFrameX = int(frameWidth/2) 
         
-    def Sett_offsett_from_senter_screen(self):
-         # Center frame + point
+    def Sett_offsett_from_center_screen(self):
+        # Create refferencebox center screen
         self.refP1 = (int(self.centerFrameX - self.refBox[2]/2) , int(self.centerFrameY - self.refBox[3]/2)) 
         self.refP2 = (int(self.centerFrameX + self.refBox[2]/2) , int(self.centerFrameY + self.refBox[3]/2))
-        # Centerpoint
+        # Create centerpoint in refferencebox center screen 
         self.cRefP1 = (self.centerFrameX, self.centerFrameY)
         self.cRefP2 = (self.centerFrameX, self.centerFrameY)
-        # Delta
+        # Update delta/offset between bbox and center screen 
         self.dx = float(self.centerXbbox - self.centerFrameX)
         self.dy = float(self.centerFrameY - self.centerYbbox)
         self.dz = float(self.refBox[3] - self.bbox[3])
-        
-        
+              
 #--------------------------Tracker end-------------------------------------- 
             
             
@@ -411,17 +412,19 @@ def Click_multi_start():
     if t[0].tracker_running:
         SendData()
     
-       
+# Retrieve the selected camera source
 def Camera_Select():
     return int(camera_drop_1.get())
 
+# Function for stopping the tracker functions
 def Stop_all_trackers():
     for obj in t:
         obj.Stop_tracker()
     t.clear()
     global trackRunning
     trackRunning=False
-        
+
+# Updates the statusbar with the offset        
 def Update_statusbar():
     if len(t) > 0:
         statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +" \tx: " + str(round(t[0].dx)) + "\ty: " + str(round(t[0].dy)) + "\tz: " + str(round(t[0].dz)))
@@ -463,15 +466,20 @@ def Update_Indicators():
             Indicator_3.itemconfig(my_oval_3, fill="grey")
     root.after(400, Update_Indicators)
     
-#----Errordetection-----  
+    
+    
+#-------Errordetection--------  
+
+# Timer for measuring time of movement.
 def Error_timer():
     global pre_dx, pre_dy, pre_dz
     for obj in t:
         pre_dx = obj.dx
         pre_dy = obj.dy
         pre_dz = obj.dz      
-    root.after(2000,Error_timer)
-        
+    root.after(2000,Error_timer) 
+    
+# Error detection if tracker moves to far in a short ammount of time, indicates someting is wrong.   
 def Error_detection():
     for obj in t:   
         if obj.dx >= (abs(pre_dx)+30):
@@ -484,7 +492,7 @@ def Error_detection():
 #---------------------  
   
 def Output_control():
-    # Midlertidig output controll:
+    # Themporary output controll:
     i=0; y=0; x=0; z=0; tracker=""
     if len(t)>0:  
         for obj in t:
@@ -496,7 +504,7 @@ def Output_control():
                 tracker = tracker + "/" + obj.tracker_type[0:3]
             else: i=1
             
-            statusbar_0.config(text = "Output: T:"+tracker+";"+"\tx: " + str(round(x/i)) + "\ty: " + str(round(y/i)) + "\tz: " + str(round(z/i)))  #str("{:.4}".format(z/i)))
+            statusbar_0.config(text = "Output: Trackers:"+tracker+";"+"  x: " + str(round(x/i)) + "  y: " + str(round(y/i)) + "  z: " + str(round(z/i)))  #str("{:.4}".format(z/i)))
     root.after(200, Output_control)
     
 #--------------------------------GUI end----------------------------------------
