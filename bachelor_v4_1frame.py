@@ -23,11 +23,12 @@ arucoRunning = False
 trackRunning = False
 
 #------------------------------------------------------------------
-#------------------Client socket-----------------------------------
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+#-------------------------Socket-----------------------------------
+main_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
 host = 'localhost'     # IP
 port = 5433             # Port
+print("Server: Socket Created")
 #------------------------------------------------------------------
 
 
@@ -522,19 +523,25 @@ def Output_control():
  
     
 
-#-------------------------------Client socket------------------------------- 
+#-------------------------------Send data-------------------------------------- 
 def SendData():
-    message = "X: " + str(t[0].dx) + "Y: " + str(t[0].dy) + "Z: " + str(t[0].dz)    # Må lage en standard posisjons string med header
-
-    # print("Client: " + message)
-    client_socket.sendto(message.encode(), (host,5432))
+    x = str(t[0].dx)
+    y = str(t[0].dy)
+    z = str(t[0].dz)
+    #pitch = 
+    #yaw =
+    #roll =
     
-    # data, server = client_socket.recvfrom(65535)          #For testing av utdata med server.
+    message = '$X'+x.rjust(10,0)+'Y'+y.rjust(10,0)+'Z'+z.rjust(10,0)+'PITCH'+'YAW'+'ROLL'+'#'   # standard string format: $X000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
+
+    main_socket.sendto(message.encode(), (host,5433))
+    
+    # data, client = main_socket.recvfrom(65535)          #For testing av utdata med en client.
     # data = data.decode()
-    # print("Client: " + data)
+    # print("Main: " + data)
     
     root.after(2000, SendData)
-#-------------------------------Client socket end-----------------------------    
+#-------------------------------Send data end-----------------------------    
     
     
     
