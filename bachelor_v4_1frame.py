@@ -233,7 +233,7 @@ class Aruco:
         #--- Get the camera calibration path
         calib_path  = 'Calibration/'
         self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
-        self.camera_distortion   = np.loadtxt(calib_path+'distortionMatrix.txt', delimiter=',')
+        self.camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
 
         #--- 180 deg rotation matrix around the x axis
         self.R_flip  = np.zeros((3,3), dtype=np.float32)
