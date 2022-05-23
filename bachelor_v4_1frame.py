@@ -28,7 +28,7 @@ main_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
 host = 'localhost'     # IP
 port = 5433             # Port
-print("Server: Socket Created")
+print("Program: Socket Created")
 #------------------------------------------------------------------
 
 
@@ -225,7 +225,7 @@ class Tracker:
 #------------------------------Aruco------------------------------
 class Aruco:   
     def __init__(self, video_capture):    
-        #--- definerer tag
+        #--- Define tag
         self.cap = video_capture
         self.id_to_find  = 3
         self.marker_size  = 10 #- [cm]
@@ -331,6 +331,11 @@ class Aruco:
 
                 str_position = "CAMERA Position x=%4.0f  y=%4.0f  z=%4.0f"%(pos_camera[0], pos_camera[1], pos_camera[2])
                 cv2.putText(self.frame, str_position, (0, 110), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                
+                #--------------------
+                # np.round(pos_camera, 1)
+                # pos_camera.astype(float)
+                # t[0].dx = pos_camera[0], t[0].dy = pos_camera[1], t[0].dz = pos_camera[2]
 
                 #-- Get the attitude of the camera respect to the frame
                 roll_camera, pitch_camera, yaw_camera = self.rotationMatrixToEulerAngles(self.R_flip*R_tc)
