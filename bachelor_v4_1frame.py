@@ -1,6 +1,9 @@
 # Test 9 Kirieg
 # Test Bj8rnar
 
+from cgitb import enable
+from faulthandler import disable
+from sre_parse import State
 from tkinter import *
 from tkinter import ttk
 from tracemalloc import stop
@@ -15,12 +18,10 @@ import sys
 import glob
 import socket
 import time, math
+from sqlalchemy import null
 import cv2.aruco as aruco
 
-global arucoRunning
-global trackRunning 
-arucoRunning = False
-trackRunning = False
+
 
 #------------------------------------------------------------------
 #------------------Client socket-----------------------------------
@@ -31,10 +32,14 @@ port = 5433             # Port
 #------------------------------------------------------------------
 
 
-
 #------------------------------------------------------------------
 #------------------Variables---------------------------------------
-tms = 80    #Times pr milliscond
+tms = 100    #Times pr milliscond
+
+global arucoRunning
+global trackRunning 
+arucoRunning = False
+trackRunning = False
 
 class Colors:
     Aqua = [255, 255, 0]  
@@ -45,7 +50,9 @@ class Colors:
     Blue = [255, 0, 0] 
     Red = [0, 0, 255]   
     Green = [0, 128, 0]
-    
+#------------------------------------------------------------------
+
+
 #------------------------------------------------------------------   
 #------------Undistort camera matrix-------------------------------
 #Get the camera calibration path  
@@ -57,8 +64,7 @@ dist = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
 
 #------------------------------------------------------------------
 #----------------------Tracker-------------------------------------
-class Tracker:  
-    
+class Tracker:    
     def __init__(self, tracker_type, bbox, video_capture, color):
         
         self.bbox = bbox
@@ -109,21 +115,24 @@ class Tracker:
         x, y, w, h = roi
         frame = frame[y:y+h, x:x+w]
         ##############################
-
+        
+        self.ok = self.tracker.init(self.frame, self.bbox)
+        
         if delta_drop.get() == "Marked object":
             self.Create_offsett_from_ref_bbox()
         elif delta_drop.get() == "Senter screen":
             self.Create_offsett_from_center_screen()
         
-    def Run(self):
-        global trackRunning
-        trackRunning = True
+       
+        
+    def Run(self):    
         if self.tracker_running == True:
-            self.ok = self.tracker.init(self.frame, self.bbox)
-            self.error = False
+            global trackRunning
+            trackRunning = True
             
+            
+            self.error = False
             # Read a new frame
-            self.cap
             self.ok, self.frame = self.cap.read()
             
             ########## UNDISTORT ########### (Comment out if usen video.mp4)
@@ -163,11 +172,14 @@ class Tracker:
             Error_detection()
             
             root.after(tms, self.Run)
+            
     # Start tracker 
     def Start(self):       
-        #self.click_new_bbox()
         self.tracker_running = True
         self.Run()
+        global trackRunning
+        trackRunning = True
+        
     
     def Stop_tracker(self):
         self.tracker_running = False
@@ -216,7 +228,7 @@ class Tracker:
         self.dy = float(self.centerFrameY - self.centerYbbox)
         self.dz = float(self.refBox[3] - self.bbox[3])
               
-#--------------------------Tracker end-------------------------------------- 
+#--------------------------Tracker end----------------------------
             
             
             
@@ -232,7 +244,7 @@ class Aruco:
         #--- Get the camera calibration path
         calib_path  = 'Calibration/'
         self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
-        self.camera_distortion   = np.loadtxt(calib_path+'distortionMatrix.txt', delimiter=',')
+        self.camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
 
         #--- 180 deg rotation matrix around the x axis
         self.R_flip  = np.zeros((3,3), dtype=np.float32)
@@ -497,11 +509,11 @@ def Error_detection():
             obj.warning = True
         if obj.dz >= (abs(pre_dz)+30):
             obj.warning = True
-    root.after(1000,Error_detection)
+    root.after(1000, Error_detection)
 #---------------------  
-  
+
+# Themporary output controll:
 def Output_control():
-    # Themporary output controll:
     i=0; y=0; x=0; z=0; tracker=""
     if len(t)>0:  
         for obj in t:
@@ -515,7 +527,27 @@ def Output_control():
             
             statusbar_0.config(text = "Output: Trackers:"+tracker+";"+"  x: " + str(round(x/i)) + "  y: " + str(round(y/i)) + "  z: " + str(round(z/i)))  #str("{:.4}".format(z/i)))
     root.after(200, Output_control)
-    
+
+# Configure enabling buttons
+def Button_controll():
+    for obj in t:
+        if obj.tracker_running == True:
+            button_stop_all.config(state=NORMAL)
+            button_start_multiple.config(state=DISABLED)
+            button_aruco.config(state=DISABLED)
+        # elif arucoRunning:
+        #     button_stop_all.config(state=NORMAL)
+        #     button_start_multiple.config(state=DISABLED)
+        #     button_aruco.config(state=DISABLED)
+    if len(t)<1:                                                                    
+        button_stop_all.config(state=DISABLED)
+        button_start_multiple.config(state=NORMAL)
+        button_aruco.config(state=NORMAL)
+    elif arucoRunning:                                                                              # Må legge forigling her!!!!!!
+        button_stop_all.config(state=NORMAL)
+        button_start_multiple.config(state=DISABLED)
+        button_aruco.config(state=DISABLED)
+    root.after(600, Button_controll)
 #--------------------------------GUI end----------------------------------------
  
  
@@ -837,9 +869,9 @@ if __name__ == "__main__":
     camera_drop_1 = ttk.Combobox(frame_0, value = [0,1,2,3,5])
     camera_drop_1.current(0)
     tracker_drop_1 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT"])
-    tracker_drop_1.current(4)
+    tracker_drop_1.current(5)
     tracker_drop_2 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT"])
-    tracker_drop_2.current(5)
+    tracker_drop_2.current(0)
     tracker_drop_3 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT"])
     tracker_drop_3.current(0)
     delta_drop = ttk.Combobox(frame_0, value=["Marked object", "Senter screen"])
@@ -899,11 +931,15 @@ if __name__ == "__main__":
         cap = cv2.VideoCapture(0)
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
     
+
+    Button_controll()
     
     Show_frames_one()
     Update_statusbar()
     Update_Indicators()
     Output_control()
+    
+  
     
     root.mainloop()
     
