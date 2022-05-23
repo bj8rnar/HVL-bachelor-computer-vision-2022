@@ -18,7 +18,6 @@ import sys
 import glob
 import socket
 import time, math
-from sqlalchemy import null
 import cv2.aruco as aruco
 
 
@@ -340,7 +339,7 @@ class Aruco:
 
                 #-- Now get Position and attitude f the camera respect to the marker
                 pos_camera = -R_tc*np.matrix(tvec).T
-
+                
                 str_position = "CAMERA Position x=%4.0f  y=%4.0f  z=%4.0f"%(pos_camera[0], pos_camera[1], pos_camera[2])
                 cv2.putText(self.frame, str_position, (0, 110), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
                 
