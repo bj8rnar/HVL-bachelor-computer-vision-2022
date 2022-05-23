@@ -26,7 +26,7 @@ import cv2.aruco as aruco
 #-------------------------Socket-----------------------------------
 main_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
-host = 'localhost'     # IP
+ip = 'localhost'     # IP
 port = 5433             # Port
 print("Program: Socket Created")
 #------------------------------------------------------------------
@@ -572,9 +572,9 @@ def SendData():
     
     message = '$X'+x.rjust(10,0)+'Y'+y.rjust(10,0)+'Z'+z.rjust(10,0)+'PITCH'+'YAW'+'ROLL'+'#'   # standard string format: $X000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
 
-    main_socket.sendto(message.encode(), (host,5433))
+    main_socket.sendto(message.encode(), (ip,port))
     
-    # data, client = main_socket.recvfrom(65535)          #For testing av utdata med en client.
+    # data, client = main_socket.recvfrom(65535)          #For testing av utdata med server.
     # data = data.decode()
     # print("Main: " + data)
     
