@@ -570,9 +570,9 @@ def SendData():
     #yaw =
     #roll =
     
-    message = '$X'+x.rjust(10,0)+'Y'+y.rjust(10,0)+'Z'+z.rjust(10,0)+'PITCH'+'YAW'+'ROLL'+'#'   # standard string format: $X000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
+    telegram = '$X'+x.rjust(10,0)+'Y'+y.rjust(10,0)+'Z'+z.rjust(10,0)+'PITCH'+'YAW'+'ROLL'+'#'   # standard string format: $X000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
 
-    main_socket.sendto(message.encode(), (ip,port))
+    main_socket.sendto(telegram.encode(), (ip,port))
     
     # data, client = main_socket.recvfrom(65535)          #For testing av utdata med server.
     # data = data.decode()
