@@ -340,13 +340,15 @@ class Aruco:
                 #-- Now get Position and attitude f the camera respect to the marker
                 pos_camera = -R_tc*np.matrix(tvec).T
                 
+                #------------TEST
+                #t[0].dx=pos_camera[0], t[0].dy=pos_camera[1], t[0].dz=pos_camera[2]
+                #print(pos_camera[0])
+
+                cameraListe = pos_camera.tolist()
+                print(cameraListe[0])
                 str_position = "CAMERA Position x=%4.0f  y=%4.0f  z=%4.0f"%(pos_camera[0], pos_camera[1], pos_camera[2])
                 cv2.putText(self.frame, str_position, (0, 110), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
                 
-                #--------------------
-                # np.round(pos_camera, 1)
-                # pos_camera.astype(float)
-                # t[0].dx = pos_camera[0], t[0].dy = pos_camera[1], t[0].dz = pos_camera[2]
 
                 #-- Get the attitude of the camera respect to the frame
                 roll_camera, pitch_camera, yaw_camera = self.rotationMatrixToEulerAngles(self.R_flip*R_tc)
