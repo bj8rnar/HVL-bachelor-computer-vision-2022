@@ -13,6 +13,8 @@ import sys
 import glob
 import socket
 import time, math
+
+from regex import A
 import cv2.aruco as aruco
 
 
@@ -74,14 +76,6 @@ class Tracker:
         self.dy = 0.0
         self.dz = 0.0
                
-        if self.tracker_type == 'BOOSTING':
-            self.tracker = cv2.legacy.TrackerBoosting_create()           
-        if self.tracker_type == 'MIL':
-            self.tracker = cv2.TrackerMIL_create()
-        if self.tracker_type == 'KCF':
-            self.tracker = cv2.legacy.TrackerKCF_create()
-        if self.tracker_type == 'TLD':
-            self.tracker = cv2.legacy.TrackerTLD_create()
         if self.tracker_type == 'MEDIANFLOW':
             self.tracker = cv2.legacy.TrackerMedianFlow_create()
         if self.tracker_type == 'MOSSE':
@@ -117,6 +111,9 @@ class Tracker:
             self.Create_offsett_from_ref_bbox()
         elif delta_drop.get() == "Senter screen":
             self.Create_offsett_from_center_screen()
+            
+        Error_timer()    
+        Error_detection()
         
        
         
@@ -162,10 +159,7 @@ class Tracker:
                     self.Sett_offsett_from_center_screen()
             else:
                 self.error= True
-                
-            Error_timer()    
-            Error_detection()
-            
+                        
             root.after(tms, self.Run)
             
     # Start tracker 
@@ -236,10 +230,13 @@ class Aruco:
         self.id_to_find  = 3
         self.marker_size  = 10 #- [cm]
         
-        # Outputs
+        #-- Outputs
         self.dx = 0
         self.dy = 0
         self.dz = 0
+        self.roll = 0
+        self.pitch = 0
+        self.yaw = 0
 
         #--- Get the camera calibration path
         calib_path  = 'Calibration/'
@@ -294,9 +291,8 @@ class Aruco:
 
      
     def Aruco_run(self):        
-        if not trackRunning:
-            global arucoRunning
-            arucoRunning = True
+        if not trackRunning and arucoRunning:                     
+            
             ret, self.frame = self.cap.read()
 
             #-- Convert in gray scale
@@ -365,17 +361,21 @@ class Aruco:
             
             root.after(tms, self.Aruco_run)
 
-def Aruco_Click():
-    Stop_all_trackers()
-    a = Aruco(cap)
-    a.Aruco_run()          
+      
 #----------------------Aruco END--------------------------------       
         
         
         
 #----------------------------------------------------------------
-#--------------------------GUI update-----------------------------------
-
+#--------------------------GUI Update-----------------------------------
+def Aruco_Click():
+    Stop_all_trackers()
+    a = Aruco(cap)
+    global arucoRunning
+    arucoRunning = True
+    a.Aruco_run()
+      
+    
 # Function that shows bbox and refbox from trackers on screen
 def Show_frames_one():    
     if not arucoRunning:
@@ -450,6 +450,8 @@ def Stop_all_trackers():
     t.clear()
     global trackRunning
     trackRunning=False
+    global arucoRunning
+    arucoRunning=False
 
 # Updates the statusbar with the offset        
 def Update_statusbar():
@@ -462,8 +464,9 @@ def Update_statusbar():
         
     root.after(200,Update_statusbar)
 
-# Error indicator update
+# Controll indicators
 def Update_Indicators(): 
+    # Error detection indicators
     if len(t) > 0:
         if t[0].error:
             Indicator_1.itemconfig(my_oval_1, fill="red")
@@ -491,6 +494,18 @@ def Update_Indicators():
             Indicator_3.itemconfig(my_oval_3, fill="green")
         else:
             Indicator_3.itemconfig(my_oval_3, fill="grey")
+    if len(t) == 0:
+        Indicator_1.itemconfig(my_oval_1, fill="grey")
+        Indicator_2.itemconfig(my_oval_2, fill="grey")
+        Indicator_3.itemconfig(my_oval_3, fill="grey")
+        
+    # Aruco indicator:
+    if arucoRunning:
+        Indicator_4.itemconfig(my_oval_4, fill="blue")
+    if not arucoRunning:
+        Indicator_4.itemconfig(my_oval_4, fill="grey")
+        
+        
     root.after(400, Update_Indicators)
     
     
@@ -504,19 +519,21 @@ def Error_timer():
         pre_dx = obj.dx
         pre_dy = obj.dy
         pre_dz = obj.dz      
-    root.after(2000,Error_timer) 
+    root.after(1000, Error_timer) 
     
 # Error detection if tracker moves to far in a short ammount of time, indicates someting is wrong.   
+# If tracker moves more than 50 pixles in 500 millisec, warning vil be triggered.
 def Error_detection():
     for obj in t:   
-        if obj.dx >= (abs(pre_dx)+30):
+        if abs(obj.dx) >= (abs(pre_dx)+50):
             obj.warning = True
-        if obj.dy >= (abs(pre_dy)+30):
+        if abs(obj.dy) >= (abs(pre_dy)+50):
             obj.warning = True
-        if obj.dz >= (abs(pre_dz)+30):
+        if abs(obj.dz) >= (abs(pre_dz)+50):
             obj.warning = True
-    root.after(1000, Error_detection)
-#---------------------  
+    root.after(1500, Error_detection)
+    
+#-------------------------  
 
 # Themporary output controll:
 def Output_control():
@@ -526,35 +543,36 @@ def Output_control():
             if obj.tracker_running and not obj.error:
                 x += obj.dx
                 y += obj.dy
-                z += obj.dz
-                i += 1
+                if not obj.tracker_type == "MOSSE":     # Mosse can not be used for estimating depth
+                    z += obj.dz
+                    i += 1
                 tracker = tracker + "/" + obj.tracker_type[0:3]
-            else: i=1
-            
+                
+            else: i=1   # Handling /0
+    
             statusbar_0.config(text = "Output: Trackers:"+tracker+";"+"  x: " + str(round(x/i)) + "  y: " + str(round(y/i)) + "  z: " + str(round(z/i)))  #str("{:.4}".format(z/i)))
     root.after(200, Output_control)
 
 # Configure enabling buttons
 def Button_controll():
-    for obj in t:
-        if obj.tracker_running == True:
-            button_stop_all.config(state=NORMAL)
-            button_start_multiple.config(state=DISABLED)
-            button_aruco.config(state=DISABLED)
-        # elif arucoRunning:
-        #     button_stop_all.config(state=NORMAL)
-        #     button_start_multiple.config(state=DISABLED)
-        #     button_aruco.config(state=DISABLED)
-    if len(t)<1:                                                                    
-        button_stop_all.config(state=DISABLED)
-        button_start_multiple.config(state=NORMAL)
-        button_aruco.config(state=NORMAL)
-    elif arucoRunning:                                             # Må legge forigling her!!!!!!
+    if trackRunning:
         button_stop_all.config(state=NORMAL)
         button_start_multiple.config(state=DISABLED)
         button_aruco.config(state=DISABLED)
+        button_calibrate.config(state=DISABLED)
+    elif arucoRunning:                                             
+        button_stop_all.config(state=NORMAL)
+        button_start_multiple.config(state=DISABLED)
+        button_aruco.config(state=DISABLED)
+        button_calibrate.config(state=DISABLED)
+    else:
+        button_stop_all.config(state=DISABLED)
+        button_start_multiple.config(state=NORMAL)
+        button_aruco.config(state=NORMAL)
+        button_calibrate.config(state=NORMAL)
+    
     root.after(600, Button_controll)
-#--------------------------------GUI end update----------------------------------------
+#--------------------------------GUI Update End----------------------------------------
  
  
  
@@ -849,7 +867,7 @@ if __name__ == "__main__":
     # Label naming boxes:
     label_camera = Label(frame_0, text="Camera Source")
     label_window_1 = Label(frame_0, text="Tracker 1")
-    label_window_2 = Label(frame_0, text="Tracekr 2")
+    label_window_2 = Label(frame_0, text="Tracker 2")
     label_window_3 = Label(frame_0, text="Tracker 3")
     label_Delta_method = Label(frame_0, text="Delta method")
 
@@ -863,10 +881,12 @@ if __name__ == "__main__":
     Indicator_1 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
     Indicator_2 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
     Indicator_3 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
+    Indicator_4 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
     
     my_oval_1 = Indicator_1.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
     my_oval_2 = Indicator_2.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
     my_oval_3 = Indicator_3.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
+    my_oval_4 = Indicator_4.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
 
     # Buttons define:
     button_quit = Button(frame_0, text="Quit", padx=10, pady=2, command=root.quit)
@@ -880,11 +900,11 @@ if __name__ == "__main__":
 
     camera_drop_1 = ttk.Combobox(frame_0, value = [0,1,2,3,5])
     camera_drop_1.current(0)
-    tracker_drop_1 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT"])
-    tracker_drop_1.current(5)
-    tracker_drop_2 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT"])
+    tracker_drop_1 = ttk.Combobox(frame_0, value = ["0", "MEDIANFLOW", "CSRT", "MOSSE"])
+    tracker_drop_1.current(1)
+    tracker_drop_2 = ttk.Combobox(frame_0, value = ["0", "MEDIANFLOW", "CSRT", "MOSSE"])
     tracker_drop_2.current(0)
-    tracker_drop_3 = ttk.Combobox(frame_0, value = ["0","BOOSTING","MIL","KCF", "MOSSE", "MEDIANFLOW", "CSRT"])
+    tracker_drop_3 = ttk.Combobox(frame_0, value = ["0", "MEDIANFLOW", "CSRT", "MOSSE"])
     tracker_drop_3.current(0)
     delta_drop = ttk.Combobox(frame_0, value=["Marked object", "Senter screen"])
     delta_drop.current(0)
@@ -910,22 +930,23 @@ if __name__ == "__main__":
     button_start_multiple.grid(row=0,column=3)
     button_stop_all.grid(row=0,column=4)
     button_calibrate.grid(row=0, column=5)
-    button_aruco.grid(row=2, column=4)
+    button_aruco.grid(row=2, column=5)
 
     # Frames:
     frame_0.grid(row=0,column=0,padx=2, pady=2)
     frame_1.grid(row=0,column=1,padx=2, pady=2)
 
     # Statusbar:
-    statusbar_0.grid(row=7,column=0,columnspan=6, sticky=W+E)
+    statusbar_0.grid(row=11,column=0,columnspan=6, sticky=W+E)
     statusbar_1.grid(row=8,column=0,columnspan=6, sticky=W+E)
     statusbar_2.grid(row=9,column=0,columnspan=6, sticky=W+E)
     statusbar_3.grid(row=10,column=0,columnspan=6, sticky=W+E)
     
     # Canvas Indicator:
-    Indicator_1.grid(row=8,column=7)
-    Indicator_2.grid(row=9,column=7)
-    Indicator_3.grid(row=10,column=7)
+    Indicator_1.grid(row=8,column=6)
+    Indicator_2.grid(row=9,column=6)
+    Indicator_3.grid(row=10,column=6)
+    Indicator_4.grid(row=2,column=6)
  
     #-------------------------------------------------------
  
