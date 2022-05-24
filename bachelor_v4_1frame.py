@@ -1,17 +1,12 @@
-# Test 9 Kirieg
+# Test 11 Kirieg
 # Test Bj8rnar
 
-from cgitb import enable
-from faulthandler import disable
-from sre_parse import State
 from tkinter import *
 from tkinter import ttk
-from tracemalloc import stop
 from turtle import update        # To use combobox
 from PIL import ImageTk, Image
 from click import command
 import cv2
-from cv2 import getTickCount
 import numpy as np
 import os
 import sys
@@ -240,6 +235,11 @@ class Aruco:
         self.cap = video_capture
         self.id_to_find  = 3
         self.marker_size  = 10 #- [cm]
+        
+        # Outputs
+        self.dx = 0
+        self.dy = 0
+        self.dz = 0
 
         #--- Get the camera calibration path
         calib_path  = 'Calibration/'
@@ -369,13 +369,12 @@ def Aruco_Click():
     Stop_all_trackers()
     a = Aruco(cap)
     a.Aruco_run()          
-
 #----------------------Aruco END--------------------------------       
         
         
         
 #----------------------------------------------------------------
-#--------------------------GUI-----------------------------------
+#--------------------------GUI update-----------------------------------
 
 # Function that shows bbox and refbox from trackers on screen
 def Show_frames_one():    
@@ -550,12 +549,12 @@ def Button_controll():
         button_stop_all.config(state=DISABLED)
         button_start_multiple.config(state=NORMAL)
         button_aruco.config(state=NORMAL)
-    elif arucoRunning:                                                                              # Må legge forigling her!!!!!!
+    elif arucoRunning:                                             # Må legge forigling her!!!!!!
         button_stop_all.config(state=NORMAL)
         button_start_multiple.config(state=DISABLED)
         button_aruco.config(state=DISABLED)
     root.after(600, Button_controll)
-#--------------------------------GUI end----------------------------------------
+#--------------------------------GUI end update----------------------------------------
  
  
  
