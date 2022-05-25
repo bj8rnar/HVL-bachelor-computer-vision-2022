@@ -21,7 +21,7 @@ import cv2.aruco as aruco
 #-------------------------Socket-----------------------------------
 main_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
-ip = 'localhost'     # IP
+ip = 'localhost'     # IP 127.0.0.1
 port = 5433             # Port
 print("Program: Socket Created")
 #------------------------------------------------------------------
@@ -225,8 +225,14 @@ class Aruco:
     def __init__(self, video_capture):    
         #--- Define tag
         self.cap = video_capture
-        self.id_to_find  = 3
-        self.marker_size  = 9.5 #- [cm]
+        try:
+            self.id_to_find  = int(entry_aruco_id.get())
+        except:
+            print("Invalid entry id")
+        try:
+            self.marker_size  = float(entry_aruco_size.get()) #9.5 #- [cm]
+        except:
+            print("Invalid entry size aruco marker")
         
         #-- Outputs
         self.x = 0
@@ -248,9 +254,13 @@ class Aruco:
         self.R_flip[2,2] =-1.0
 
         #--- Define the aruco dictionary
-        #aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
-        self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
-        #aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
+        if aruco_lib_drop.get() == "4x4_100":
+            self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
+        elif aruco_lib_drop.get() == "5x5_100":
+            self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
+        elif aruco_lib_drop.get() == "Classic":
+            self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
+            
         self.parameters  = aruco.DetectorParameters_create()
 
         #-- Font for the text in the image
@@ -341,8 +351,9 @@ class Aruco:
         
         
         
-#----------------------------------------------------------------
+#-----------------------------------------------------------------------
 #--------------------------GUI Update-----------------------------------
+
 def Aruco_Click():
     Stop_all_trackers()
     a = Aruco(cap)
@@ -350,7 +361,6 @@ def Aruco_Click():
     arucoRunning = True
     aList.append(a)
     aList[0].Aruco_run()
-    #a.Aruco_run()
       
     
 # Function that shows bbox and refbox from trackers on screen
@@ -428,6 +438,8 @@ def Stop_all_trackers():
     global arucoRunning
     arucoRunning=False
 
+
+
 # Updates the statusbar with the offset        
 def Update_statusbar():
     if len(tList) > 0:
@@ -487,8 +499,7 @@ def Update_Indicators():
         
         
     root.after(400, Update_Indicators)
-    
-    
+     
     
 #-------Errordetection--------  
 
@@ -519,6 +530,7 @@ def Error_detection():
 def Output_control():
     i=0; j=0; x=0; y=0; z=0; tracker=""
     global tx, ty, tz
+    tx=0; ty=0; tz=0
     if len(tList)>0: 
         for obj in tList:
             if obj.tracker_running and not obj.error:
@@ -590,14 +602,30 @@ def SendData():
         #$AX000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
         telegram = ("$ARUCOX%.2fY%.2fZ%.2fRO%.2fPI%.2fYA%.2f#"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
         print(telegram)
-        
-    main_socket.sendto(telegram.encode(), (ip,port))
+    try:
+        main_socket.sendto(telegram.encode(), (ip,port))
+    except:
+        print("Cannot send data UDP")
     
     # data, client = main_socket.recvfrom(65535)          #For testing av utdata med server.
     # data = data.decode()
     # print("Main: " + data)
     
     root.after(1000, SendData)
+    
+# Function click connect
+def Connect_UDP_Click():
+    global ip, port
+    try:
+        port = int(entry_port.get())
+    except:
+        print("Not valid port input")
+    try:
+        ip = str(entry_ip.get())
+    except:
+        print("Not valid IP input")
+
+    print("Program: Socket Connected")
 #-------------------------------Send data end-----------------------------    
     
     
@@ -788,7 +816,7 @@ def Cal_Click():
                 # crop the image
                 x,y,w,h = roi
                 dst = dst[y:y+h, x:x+w]
-                os.chdir('../Calibration')
+                os.chdir('../Calibration')  
                 cv2.imwrite("calibresult.png",dst)
                 np.savetxt("cameraMatrix.txt", mtx, delimiter=',')
                 np.savetxt("cameraDistortion.txt", dist, delimiter=',')
@@ -836,7 +864,7 @@ if __name__ == "__main__":
     root = Tk()
     root.title("Computer vision position estimation") 
     root.iconbitmap('favicon.ico')     # Setts icon for app
-    root.geometry("1600x700")
+    root.geometry("1580x760")
         
         
     #-----------DEFINING Widgets:---------------
@@ -844,13 +872,23 @@ if __name__ == "__main__":
     # Frames define:
     frame_0 = LabelFrame(root, text="", padx=10, pady=10)
     frame_1 = LabelFrame(root, text="Video", padx=3, pady=3)
-
+    
     # Label naming boxes:
+    label_vid_1 = Label(frame_1)
     label_camera = Label(frame_0, text="Camera Source")
     label_window_1 = Label(frame_0, text="Tracker 1")
     label_window_2 = Label(frame_0, text="Tracker 2")
     label_window_3 = Label(frame_0, text="Tracker 3")
     label_Delta_method = Label(frame_0, text="Delta method")
+    label_port = Label(frame_0, text="Port:")
+    label_ip = Label(frame_0, text="IP:")
+    label_x = Label(frame_0, text="")
+    label_x2 = Label(frame_0, text="")
+    label_x3 = Label(frame_0, text="")
+    label_UDP = Label(frame_0, text="UDP Output:")
+    label_id = Label(frame_0, text="Aruco id")
+    label_size = Label(frame_0, text="Aruco size")
+    label_dictonary = Label(frame_0, text="Dictionary")
 
     # Statusbar define:
     statusbar_0 = Label(frame_0, text="Output: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
@@ -873,12 +911,11 @@ if __name__ == "__main__":
     button_quit = Button(frame_0, text="Quit", padx=10, pady=2, command=root.quit)
     button_start_multiple = Button(frame_0, text="Start", padx=10, pady=2, command=lambda:Click_multi_start())
     button_stop_all = Button(frame_0, text="Stop All", padx=10, pady=2, command=lambda:Stop_all_trackers())
-    button_calibrate = Button(frame_0, text="Calibrate", padx=10, pady=2, command=lambda:[Cal_Click(),Stop_all_trackers()])
-    button_aruco = Button(frame_0, text ='Aruco', padx=10, pady=2, command=lambda:[Aruco_Click()])
+    button_calibrate = Button(frame_0, text="Calibrate", padx=10, pady=2, command=lambda:Cal_Click(),)#Stop_all_trackers()
+    button_aruco = Button(frame_0, text ='Aruco Start', padx=5, pady=1, command=lambda:Aruco_Click())
+    button_connect = Button(frame_0, text= "Connect", padx=10, pady=2, command=lambda:Connect_UDP_Click())
     
-    label_vid_1 = Label(frame_1)
-    label_vid_1.grid(row=0,column=0)
-
+    # Dropdown menues
     camera_drop_1 = ttk.Combobox(frame_0, value = [0,1,2,3,5])
     camera_drop_1.current(0)
     tracker_drop_1 = ttk.Combobox(frame_0, value = ["0", "MEDIANFLOW", "CSRT", "MOSSE"])
@@ -889,15 +926,33 @@ if __name__ == "__main__":
     tracker_drop_3.current(0)
     delta_drop = ttk.Combobox(frame_0, value=["Marked object", "Senter screen"])
     delta_drop.current(0)
+    aruco_lib_drop = ttk.Combobox(frame_0, width=7,value = ["4x4_100", "5x5_100", "Classic"])
+    aruco_lib_drop.current(0)
+    
+    # Text entrys
+    entry_port = Entry(frame_0, width=10 ) 
+    entry_ip = Entry(frame_0, width=10 )
+    entry_aruco_id = Entry(frame_0, width=10)
+    entry_aruco_size = Entry(frame_0, width=10)
     #---------------------------------------------------------
 
     #---------------PLACING ON ROOT:--------------------------
-    # Label plassering:
+    # Label placing:
+    label_vid_1.grid(row=0,column=0)
     label_camera.grid(row=0,column=0)
     label_window_1.grid(row=1,column=0)
     label_window_2.grid(row=2,column=0)
     label_window_3.grid(row=3,column=0)
     label_Delta_method.grid(row=4,column=0)
+    label_x.grid(row=12,column=0)
+    label_x2.grid(row=7,column=0)
+    label_x3.grid(row=8,column=0)
+    label_UDP.grid(row=13,column=0)
+    label_port.grid(row=14,column=0)
+    label_ip.grid(row=15,column=0)
+    label_id.grid(row=3, column=4)
+    label_size.grid(row=4, column=4)
+    label_dictonary.grid(row=5,column=4)
 
     # Dropdown menues:
     camera_drop_1.grid(row=0,column=1)
@@ -905,13 +960,15 @@ if __name__ == "__main__":
     tracker_drop_2.grid(row=2,column=1)
     tracker_drop_3.grid(row=3,column=1)
     delta_drop.grid(row=4,column=1)
+    aruco_lib_drop.grid(row=5,column=5)
 
     # Buttons:
-    button_quit.grid(row=6,column=5)
-    button_start_multiple.grid(row=0,column=3)
-    button_stop_all.grid(row=0,column=4)
+    button_quit.grid(row=15,column=6)
+    button_start_multiple.grid(row=0,column=2)
+    button_stop_all.grid(row=0,column=3)
     button_calibrate.grid(row=0, column=5)
     button_aruco.grid(row=2, column=5)
+    button_connect.grid(row=15, column=2)
 
     # Frames:
     frame_0.grid(row=0,column=0,padx=2, pady=2)
@@ -928,7 +985,14 @@ if __name__ == "__main__":
     Indicator_2.grid(row=9,column=6)
     Indicator_3.grid(row=10,column=6)
     Indicator_4.grid(row=2,column=6)
- 
+    
+    # Entrys
+    entry_port.grid(row=14,column=1)
+    entry_ip.grid(row=15,column=1)
+    entry_aruco_id.grid(row=3,column=5)
+    entry_aruco_size.grid(row=4,column=5)
+    
+    
     #-------------------------------------------------------
  
 
