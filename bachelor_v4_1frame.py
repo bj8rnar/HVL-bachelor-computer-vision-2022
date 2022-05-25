@@ -13,8 +13,6 @@ import sys
 import glob
 import socket
 import time, math
-
-from regex import A
 import cv2.aruco as aruco
 
 
@@ -228,12 +226,12 @@ class Aruco:
         #--- Define tag
         self.cap = video_capture
         self.id_to_find  = 3
-        self.marker_size  = 10 #- [cm]
+        self.marker_size  = 9.5 #- [cm]
         
         #-- Outputs
-        self.dx = 0
-        self.dy = 0
-        self.dz = 0
+        self.x = 0
+        self.y = 0
+        self.z = 0
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
@@ -254,10 +252,6 @@ class Aruco:
         self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
         #aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
         self.parameters  = aruco.DetectorParameters_create()
-
-        #-- Set the camera size as the one it was calibrated with
-        #self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        #self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
         #-- Font for the text in the image
         self.font = cv2.FONT_HERSHEY_PLAIN
@@ -296,7 +290,7 @@ class Aruco:
             ret, self.frame = self.cap.read()
 
             #-- Convert in gray scale
-            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY) #-- remember, OpenCV stores color images in Blue, Green, Red
+            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY) #-- OpenCV stores color images in Blue, Green, Red
 
             #-- Find all the aruco markers in the image
             corners, ids, rejected = aruco.detectMarkers(image=gray, dictionary=self.aruco_dict, parameters=self.parameters,
@@ -317,40 +311,21 @@ class Aruco:
                 aruco.drawDetectedMarkers(self.frame, corners)
                 aruco.drawAxis(self.frame, self.camera_matrix, self.camera_distortion, rvec, tvec, 10)
 
-                #-- Print the tag position in camera frame
-                str_position = "MARKER Position x=%4.0f  y=%4.0f  z=%4.0f"%(tvec[0], tvec[1], tvec[2])
-                cv2.putText(self.frame, str_position, (0, 50), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
                 #-- Obtain the rotation matrix tag->camera
                 R_ct    = np.matrix(cv2.Rodrigues(rvec)[0])
                 R_tc    = R_ct.T
 
-                #-- Get the attitude in terms of euler 321 (Needs to be flipped first)
-                roll_marker, pitch_marker, yaw_marker = self.rotationMatrixToEulerAngles(self.R_flip*R_tc)
-
-                #-- Print the marker's attitude respect to camera frame
-                str_attitude = "MARKER Attitude r=%4.0f  p=%4.0f  y=%4.0f"%(math.degrees(roll_marker),math.degrees(pitch_marker),
-                                    math.degrees(yaw_marker))
-                cv2.putText(self.frame, str_attitude, (0, 80), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
                 #-- Now get Position and attitude f the camera respect to the marker
                 pos_camera = -R_tc*np.matrix(tvec).T
-                
-                #------------TEST
-                #t[0].dx=pos_camera[0], t[0].dy=pos_camera[1], t[0].dz=pos_camera[2]
-                #print(pos_camera[0])
 
-                cameraListe = pos_camera.tolist()
-                print(cameraListe[0])
-                str_position = "CAMERA Position x=%4.0f  y=%4.0f  z=%4.0f"%(pos_camera[0], pos_camera[1], pos_camera[2])
-                cv2.putText(self.frame, str_position, (0, 110), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
-                
+                #-- Update class position variables
+                self.x, self.y, self.z = pos_camera[0], pos_camera[1], pos_camera[2]
 
                 #-- Get the attitude of the camera respect to the frame
                 roll_camera, pitch_camera, yaw_camera = self.rotationMatrixToEulerAngles(self.R_flip*R_tc)
-                str_attitude = "CAMERA Attitude r=%4.0f  p=%4.0f  y=%4.0f"%(math.degrees(roll_camera),math.degrees(pitch_camera),
-                                    math.degrees(yaw_camera))
-                cv2.putText(self.frame, str_attitude, (0, 140), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                
+                #-- Update class attitude variables:
+                self.roll, self.pitch, self.yaw = math.degrees(roll_camera), math.degrees(pitch_camera), math.degrees(yaw_camera)
                 
             if ret:
                 cv2image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
@@ -373,7 +348,9 @@ def Aruco_Click():
     a = Aruco(cap)
     global arucoRunning
     arucoRunning = True
-    a.Aruco_run()
+    aList.append(a)
+    aList[0].Aruco_run()
+    #a.Aruco_run()
       
     
 # Function that shows bbox and refbox from trackers on screen
@@ -382,7 +359,7 @@ def Show_frames_one():
         ok, frame = cap.read() 
         if ok:
             j = 50
-            for obj in t:                
+            for obj in tList:                
                 if obj.tracker_running:
                     try:                
                         # Display refbox:
@@ -427,16 +404,16 @@ def Click_multi_start():
     bbox = New_ROI()
     
     if tracker_drop_1.get() != "0":
-        t.append(Tracker(tracker_drop_1.get(), bbox, cap, Colors.Aqua))
+        tList.append(Tracker(tracker_drop_1.get(), bbox, cap, Colors.Aqua))
     if tracker_drop_2.get() != "0":
-        t.append(Tracker(tracker_drop_2.get(), bbox ,cap, Colors.Lime))
+        tList.append(Tracker(tracker_drop_2.get(), bbox ,cap, Colors.Lime))
     if tracker_drop_3.get() != "0":
-        t.append(Tracker(tracker_drop_3.get(), bbox ,cap, Colors.Yellow))
+        tList.append(Tracker(tracker_drop_3.get(), bbox ,cap, Colors.Yellow))
         
-    for obj in t:
+    for obj in tList:
         obj.Start()
     
-    if t[0].tracker_running:
+    if tList[0].tracker_running:
         SendData()
     
 # Retrieve the selected camera source
@@ -445,9 +422,10 @@ def Camera_Select():
 
 # Function for stopping the tracker functions
 def Stop_all_trackers():
-    for obj in t:
+    for obj in tList:
         obj.Stop_tracker()
-    t.clear()
+    tList.clear()
+    aList.clear()
     global trackRunning
     trackRunning=False
     global arucoRunning
@@ -455,46 +433,46 @@ def Stop_all_trackers():
 
 # Updates the statusbar with the offset        
 def Update_statusbar():
-    if len(t) > 0:
-        statusbar_1.config(text = "Delta T1:\t " + t[0].tracker_type +" \tx: " + str(round(t[0].dx)) + "\ty: " + str(round(t[0].dy)) + "\tz: " + str(round(t[0].dz)))
-    if len(t) > 1:
-        statusbar_2.config(text = "Delta T2:\t " + t[1].tracker_type +" \tx: " + str(round(t[1].dx)) + "\ty: " + str(round(t[1].dy)) + "\tz: " + str(round(t[1].dz)) )
-    if len(t) > 2:
-        statusbar_3.config(text = "Delta T3:\t " + t[2].tracker_type +" \tx: " + str(round(t[2].dx)) + "\ty: " + str(round(t[2].dy)) + "\tz: " + str(round(t[2].dz)) )
+    if len(tList) > 0:
+        statusbar_1.config(text = "Delta T1:\t " + tList[0].tracker_type +" \tx: " + str(round(tList[0].dx)) + "\ty: " + str(round(tList[0].dy)) + "\tz: " + str(round(tList[0].dz)))
+    if len(tList) > 1:
+        statusbar_2.config(text = "Delta T2:\t " + tList[1].tracker_type +" \tx: " + str(round(tList[1].dx)) + "\ty: " + str(round(tList[1].dy)) + "\tz: " + str(round(tList[1].dz)) )
+    if len(tList) > 2:
+        statusbar_3.config(text = "Delta T3:\t " + tList[2].tracker_type +" \tx: " + str(round(tList[2].dx)) + "\ty: " + str(round(tList[2].dy)) + "\tz: " + str(round(tList[2].dz)) )
         
     root.after(200,Update_statusbar)
 
 # Controll indicators
 def Update_Indicators(): 
     # Error detection indicators
-    if len(t) > 0:
-        if t[0].error:
+    if len(tList) > 0:
+        if tList[0].error:
             Indicator_1.itemconfig(my_oval_1, fill="red")
-        elif t[0].warning & t[0].tracker_running:
+        elif tList[0].warning & tList[0].tracker_running:
             Indicator_1.itemconfig(my_oval_1, fill="yellow")
-        elif t[0].tracker_running:
+        elif tList[0].tracker_running:
             Indicator_1.itemconfig(my_oval_1, fill="green")
         else:
             Indicator_1.itemconfig(my_oval_1, fill="grey")
-    if len(t) > 1:
-        if t[1].error:
+    if len(tList) > 1:
+        if tList[1].error:
             Indicator_2.itemconfig(my_oval_2, fill="red")
-        elif t[1].warning & t[1].tracker_running:
+        elif tList[1].warning & tList[1].tracker_running:
             Indicator_2.itemconfig(my_oval_2, fill="yellow")
-        elif t[1].tracker_running:
+        elif tList[1].tracker_running:
             Indicator_2.itemconfig(my_oval_2, fill="green")
         else:
             Indicator_2.itemconfig(my_oval_2, fill="grey")
-    if len(t) > 2:
-        if t[2].error:
+    if len(tList) > 2:
+        if tList[2].error:
             Indicator_3.itemconfig(my_oval_3, fill="red")
-        elif t[2].warning & t[2].tracker_running:
+        elif tList[2].warning & tList[2].tracker_running:
             Indicator_3.itemconfig(my_oval_3, fill="yellow")
-        elif t[2].tracker_running:
+        elif tList[2].tracker_running:
             Indicator_3.itemconfig(my_oval_3, fill="green")
         else:
             Indicator_3.itemconfig(my_oval_3, fill="grey")
-    if len(t) == 0:
+    if len(tList) == 0:
         Indicator_1.itemconfig(my_oval_1, fill="grey")
         Indicator_2.itemconfig(my_oval_2, fill="grey")
         Indicator_3.itemconfig(my_oval_3, fill="grey")
@@ -515,7 +493,7 @@ def Update_Indicators():
 # Timer for measuring time of movement.
 def Error_timer():
     global pre_dx, pre_dy, pre_dz
-    for obj in t:
+    for obj in tList:
         pre_dx = obj.dx
         pre_dy = obj.dy
         pre_dz = obj.dz      
@@ -524,7 +502,7 @@ def Error_timer():
 # Error detection if tracker moves to far in a short ammount of time, indicates someting is wrong.   
 # If tracker moves more than 50 pixles in 500 millisec, warning vil be triggered.
 def Error_detection():
-    for obj in t:   
+    for obj in tList:   
         if abs(obj.dx) >= (abs(pre_dx)+50):
             obj.warning = True
         if abs(obj.dy) >= (abs(pre_dy)+50):
@@ -538,8 +516,8 @@ def Error_detection():
 # Themporary output controll:
 def Output_control():
     i=0; y=0; x=0; z=0; tracker=""
-    if len(t)>0:  
-        for obj in t:
+    if len(tList)>0: 
+        for obj in tList:
             if obj.tracker_running and not obj.error:
                 x += obj.dx
                 y += obj.dy
@@ -550,7 +528,12 @@ def Output_control():
                 
             else: i=1   # Handling /0
     
-            statusbar_0.config(text = "Output: Trackers:"+tracker+";"+"  x: " + str(round(x/i)) + "  y: " + str(round(y/i)) + "  z: " + str(round(z/i)))  #str("{:.4}".format(z/i)))
+            statusbar_0.config(text = "Output: Trackers:"+tracker+";"+"  x: " + str(round(x/i)) + "  y: " + str(round(y/i)) + "  z: " + str(round(z/i)))
+                
+    elif arucoRunning and len(aList)>0:
+        statusbar_0.config(text = "Output: Aruco:  x=%2.0f y=%2.0f z=%2.0f roll=%2.0f pitch=%2.0f yaw=%2.0f"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
+        
+        
     root.after(200, Output_control)
 
 # Configure enabling buttons
@@ -580,9 +563,9 @@ def Button_controll():
 
 #-------------------------------Send data-------------------------------------- 
 def SendData():
-    x = str(t[0].dx)
-    y = str(t[0].dy)
-    z = str(t[0].dz)
+    x = str(tList[0].dx)
+    y = str(tList[0].dy)
+    z = str(tList[0].dz)
     #pitch = 
     #yaw =
     #roll =
@@ -845,8 +828,6 @@ def Cal_Click():
         
 
 
-
-
 #-----------------------------------------------------------------
 #-----------------------------MAIN--------------------------------
               
@@ -855,7 +836,7 @@ if __name__ == "__main__":
     root = Tk()
     root.title("Computer vision position estimation") 
     root.iconbitmap('favicon.ico')     # Setts icon for app
-    root.geometry("1500x700")
+    root.geometry("1600x700")
         
         
     #-----------DEFINING Widgets:---------------
@@ -957,10 +938,12 @@ if __name__ == "__main__":
     #-----------------Commands------------------------------
     
     # List of trackers
-    t = []
+    tList = []
+    # Aruco list
+    aList = []
     
-    # Default camerasource i no tracker selected
-    if len(t) == 0:
+    # Default camerasource if no tracker selected
+    if len(tList) == 0:
         cap = cv2.VideoCapture(0)
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
     
