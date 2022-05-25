@@ -413,9 +413,6 @@ def Click_multi_start():
     for obj in tList:
         obj.Start()
     
-    if tList[0].tracker_running:
-        SendData()
-    
 # Retrieve the selected camera source
 def Camera_Select():
     return int(camera_drop_1.get())
@@ -434,12 +431,17 @@ def Stop_all_trackers():
 # Updates the statusbar with the offset        
 def Update_statusbar():
     if len(tList) > 0:
-        statusbar_1.config(text = "Delta T1:\t " + tList[0].tracker_type +" \tx: " + str(round(tList[0].dx)) + "\ty: " + str(round(tList[0].dy)) + "\tz: " + str(round(tList[0].dz)))
+        statusbar_1.config(text = "Tr.1:  " + tList[0].tracker_type +" \tx: " + str(round(tList[0].dx)) + "\ty: " + str(round(tList[0].dy)) + "\tz: " + str(round(tList[0].dz)))
+    else:
+        statusbar_1.config(text = "Tr.1")
     if len(tList) > 1:
-        statusbar_2.config(text = "Delta T2:\t " + tList[1].tracker_type +" \tx: " + str(round(tList[1].dx)) + "\ty: " + str(round(tList[1].dy)) + "\tz: " + str(round(tList[1].dz)) )
+        statusbar_2.config(text = "Tr.2:  " + tList[1].tracker_type +" \tx: " + str(round(tList[1].dx)) + "\ty: " + str(round(tList[1].dy)) + "\tz: " + str(round(tList[1].dz)) )
+    else:
+        statusbar_2.config(text = "Tr.2")
     if len(tList) > 2:
-        statusbar_3.config(text = "Delta T3:\t " + tList[2].tracker_type +" \tx: " + str(round(tList[2].dx)) + "\ty: " + str(round(tList[2].dy)) + "\tz: " + str(round(tList[2].dz)) )
-        
+        statusbar_3.config(text = "Tr.3:  " + tList[2].tracker_type +" \tx: " + str(round(tList[2].dx)) + "\ty: " + str(round(tList[2].dy)) + "\tz: " + str(round(tList[2].dz)) )
+    else:
+        statusbar_3.config(text = "Tr.3")   
     root.after(200,Update_statusbar)
 
 # Controll indicators
@@ -451,7 +453,7 @@ def Update_Indicators():
         elif tList[0].warning & tList[0].tracker_running:
             Indicator_1.itemconfig(my_oval_1, fill="yellow")
         elif tList[0].tracker_running:
-            Indicator_1.itemconfig(my_oval_1, fill="green")
+            Indicator_1.itemconfig(my_oval_1, fill="lime")
         else:
             Indicator_1.itemconfig(my_oval_1, fill="grey")
     if len(tList) > 1:
@@ -460,7 +462,7 @@ def Update_Indicators():
         elif tList[1].warning & tList[1].tracker_running:
             Indicator_2.itemconfig(my_oval_2, fill="yellow")
         elif tList[1].tracker_running:
-            Indicator_2.itemconfig(my_oval_2, fill="green")
+            Indicator_2.itemconfig(my_oval_2, fill="lime")
         else:
             Indicator_2.itemconfig(my_oval_2, fill="grey")
     if len(tList) > 2:
@@ -469,7 +471,7 @@ def Update_Indicators():
         elif tList[2].warning & tList[2].tracker_running:
             Indicator_3.itemconfig(my_oval_3, fill="yellow")
         elif tList[2].tracker_running:
-            Indicator_3.itemconfig(my_oval_3, fill="green")
+            Indicator_3.itemconfig(my_oval_3, fill="lime")
         else:
             Indicator_3.itemconfig(my_oval_3, fill="grey")
     if len(tList) == 0:
@@ -479,7 +481,7 @@ def Update_Indicators():
         
     # Aruco indicator:
     if arucoRunning:
-        Indicator_4.itemconfig(my_oval_4, fill="blue")
+        Indicator_4.itemconfig(my_oval_4, fill="lime")
     if not arucoRunning:
         Indicator_4.itemconfig(my_oval_4, fill="grey")
         
@@ -503,11 +505,11 @@ def Error_timer():
 # If tracker moves more than 50 pixles in 500 millisec, warning vil be triggered.
 def Error_detection():
     for obj in tList:   
-        if abs(obj.dx) >= (abs(pre_dx)+50):
+        if abs(obj.dx) >= (abs(pre_dx)+100):
             obj.warning = True
-        if abs(obj.dy) >= (abs(pre_dy)+50):
+        if abs(obj.dy) >= (abs(pre_dy)+100):
             obj.warning = True
-        if abs(obj.dz) >= (abs(pre_dz)+50):
+        if abs(obj.dz) >= (abs(pre_dz)+100):
             obj.warning = True
     root.after(1500, Error_detection)
     
@@ -515,24 +517,38 @@ def Error_detection():
 
 # Themporary output controll:
 def Output_control():
-    i=0; y=0; x=0; z=0; tracker=""
+    i=0; j=0; x=0; y=0; z=0; tracker=""
+    global tx, ty, tz
     if len(tList)>0: 
         for obj in tList:
             if obj.tracker_running and not obj.error:
                 x += obj.dx
                 y += obj.dy
-                if not obj.tracker_type == "MOSSE":     # Mosse can not be used for estimating depth
+                i += 1
+                j += 1
+                if obj.tracker_type == "MOSSE" and len(tList)>1:     # Not possible to use Mosse for z estimation                  
+                    j -= 1
+                elif obj.tracker_type == "MOSSE" and len(tList)==1:  # If only Mosse tracker are beeing used
+                    obj.z = 0
+                    j = 1
+                else:
                     z += obj.dz
-                    i += 1
+                                            
                 tracker = tracker + "/" + obj.tracker_type[0:3]
                 
-            else: i=1   # Handling /0
-    
-            statusbar_0.config(text = "Output: Trackers:"+tracker+";"+"  x: " + str(round(x/i)) + "  y: " + str(round(y/i)) + "  z: " + str(round(z/i)))
+            else: i=1; j=1;   # Handling /0
+
+        tx = round(x/i)
+        ty = round(y/i)
+        tz = round(z/j)
+        
+        statusbar_0.config(text = "Output: Tracker:"+tracker+";"+"  x: " + str(tx) + "  y: " + str(ty) + "  z: " + str(tz))
                 
     elif arucoRunning and len(aList)>0:
         statusbar_0.config(text = "Output: Aruco:  x=%2.0f y=%2.0f z=%2.0f roll=%2.0f pitch=%2.0f yaw=%2.0f"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
-        
+    
+    else:
+        statusbar_0.config(text="Output:")
         
     root.after(200, Output_control)
 
@@ -558,27 +574,30 @@ def Button_controll():
 #--------------------------------GUI Update End----------------------------------------
  
  
- 
-    
+     
 
-#-------------------------------Send data-------------------------------------- 
+#--------------------------------Send data-------------------------------------- 
 def SendData():
-    x = str(tList[0].dx)
-    y = str(tList[0].dy)
-    z = str(tList[0].dz)
-    #pitch = 
-    #yaw =
-    #roll =
+    telegram = ""
+    global tx,ty,tz
+    # standard string format: $TX000000Y000000Z000000#
+    if trackRunning and len(tList)>0:
     
-    telegram = '$X'+x.rjust(10,0)+'Y'+y.rjust(10,0)+'Z'+z.rjust(10,0)+'PITCH'+'YAW'+'ROLL'+'#'   # standard string format: $X000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
-
+        telegram = ("$TRACKX%.2fY%.2fZ%.2f#"%(tx, ty, tz))
+        print(telegram)
+        
+    elif arucoRunning and len(aList)>0:
+        #$AX000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
+        telegram = ("$ARUCOX%.2fY%.2fZ%.2fRO%.2fPI%.2fYA%.2f#"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
+        print(telegram)
+        
     main_socket.sendto(telegram.encode(), (ip,port))
     
     # data, client = main_socket.recvfrom(65535)          #For testing av utdata med server.
     # data = data.decode()
     # print("Main: " + data)
     
-    root.after(2000, SendData)
+    root.after(1000, SendData)
 #-------------------------------Send data end-----------------------------    
     
     
@@ -606,7 +625,6 @@ def Cal_Click():
     workingFolder = os.chdir("Cal_Images")
 
 
-
     def Start_cam_cal():
         #Start Camera button
         global start_cam_cal_btn
@@ -631,8 +649,6 @@ def Cal_Click():
         #Camera Frame and video capture
         Cal_label.frame_num = 0
         Cal_label.grid(row=0, column=0)
-        
-        
         
         #Checking if the number of pictures are enough or good
         Ant_pic_err_lab1 = Label(Top, text="")
@@ -673,7 +689,6 @@ def Cal_Click():
             imgpil.close()
             Pic_taken()
          
-         
         def Pic_taken():    
             #count pictures taken
             Fold_Path = os.getcwd()
@@ -685,7 +700,6 @@ def Cal_Click():
             label_Pic_counter = Label(Top, text="Pictures: "+ str(count))
             label_Pic_counter.grid(row= 3, column= 0)
         
-
         #Calibrate function
         def Start_Calib():
                  
@@ -720,14 +734,6 @@ def Cal_Click():
                 dimension       = float(sys.argv[5])
 
             if '-h' in sys.argv or '--h' in sys.argv:
-                print("\n IMAGE CALIBRATION GIVEN A SET OF IMAGES")
-                print(" call: python cameracalib.py <folder> <image type> <num rows (9)> <num cols (6)> <cell dimension (25)>")
-                print("\n The script will look for every image in the provided folder and will show the pattern found." \
-                    " User can skip the image pressing ESC or accepting the image with RETURN. " \
-                    " At the end the end the following files are created:" \
-                    "  - cameraDistortion.txt" \
-                    "  - cameraMatrix.txt \n\n")
-
                 sys.exit()
 
             # Find the images files
@@ -736,9 +742,6 @@ def Cal_Click():
 
             if len(images) < 9:
                 sys.exit()
-
-
-
             else:
                 nPatternFound = 0
                 imgNotGood = images[1]
@@ -766,7 +769,6 @@ def Cal_Click():
                         imgpoints.append(corners2)
                     else:
                         imgNotGood = fname
-
 
             cv2.destroyAllWindows()    
             
@@ -822,8 +824,6 @@ def Cal_Click():
         Pic_taken()
     Top.mainloop()
 #--------------------------Calibration end--------------------------
-
-
 
         
 
@@ -954,7 +954,7 @@ if __name__ == "__main__":
     Update_statusbar()
     Update_Indicators()
     Output_control()
-    
+    SendData()
   
     
     root.mainloop()
