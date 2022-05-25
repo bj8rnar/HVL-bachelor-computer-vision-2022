@@ -453,7 +453,7 @@ def Update_Indicators():
         elif tList[0].warning & tList[0].tracker_running:
             Indicator_1.itemconfig(my_oval_1, fill="yellow")
         elif tList[0].tracker_running:
-            Indicator_1.itemconfig(my_oval_1, fill="green")
+            Indicator_1.itemconfig(my_oval_1, fill="lime")
         else:
             Indicator_1.itemconfig(my_oval_1, fill="grey")
     if len(tList) > 1:
@@ -462,7 +462,7 @@ def Update_Indicators():
         elif tList[1].warning & tList[1].tracker_running:
             Indicator_2.itemconfig(my_oval_2, fill="yellow")
         elif tList[1].tracker_running:
-            Indicator_2.itemconfig(my_oval_2, fill="green")
+            Indicator_2.itemconfig(my_oval_2, fill="lime")
         else:
             Indicator_2.itemconfig(my_oval_2, fill="grey")
     if len(tList) > 2:
@@ -471,7 +471,7 @@ def Update_Indicators():
         elif tList[2].warning & tList[2].tracker_running:
             Indicator_3.itemconfig(my_oval_3, fill="yellow")
         elif tList[2].tracker_running:
-            Indicator_3.itemconfig(my_oval_3, fill="green")
+            Indicator_3.itemconfig(my_oval_3, fill="lime")
         else:
             Indicator_3.itemconfig(my_oval_3, fill="grey")
     if len(tList) == 0:
@@ -481,7 +481,7 @@ def Update_Indicators():
         
     # Aruco indicator:
     if arucoRunning:
-        Indicator_4.itemconfig(my_oval_4, fill="blue")
+        Indicator_4.itemconfig(my_oval_4, fill="lime")
     if not arucoRunning:
         Indicator_4.itemconfig(my_oval_4, fill="grey")
         
@@ -526,7 +526,7 @@ def Output_control():
                 y += obj.dy
                 i += 1
                 j += 1
-                if obj.tracker_type == "MOSSE" and len(tList)>1:     # Do not use Mosse for z estimation                  
+                if obj.tracker_type == "MOSSE" and len(tList)>1:     # Not possible to use Mosse for z estimation                  
                     j -= 1
                 elif obj.tracker_type == "MOSSE" and len(tList)==1:  # If only Mosse tracker are beeing used
                     obj.z = 0
