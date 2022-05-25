@@ -431,12 +431,17 @@ def Stop_all_trackers():
 # Updates the statusbar with the offset        
 def Update_statusbar():
     if len(tList) > 0:
-        statusbar_1.config(text = "Delta T1:\t " + tList[0].tracker_type +" \tx: " + str(round(tList[0].dx)) + "\ty: " + str(round(tList[0].dy)) + "\tz: " + str(round(tList[0].dz)))
+        statusbar_1.config(text = "Tr.1:  " + tList[0].tracker_type +" \tx: " + str(round(tList[0].dx)) + "\ty: " + str(round(tList[0].dy)) + "\tz: " + str(round(tList[0].dz)))
+    else:
+        statusbar_1.config(text = "Tr.1")
     if len(tList) > 1:
-        statusbar_2.config(text = "Delta T2:\t " + tList[1].tracker_type +" \tx: " + str(round(tList[1].dx)) + "\ty: " + str(round(tList[1].dy)) + "\tz: " + str(round(tList[1].dz)) )
+        statusbar_2.config(text = "Tr.2:  " + tList[1].tracker_type +" \tx: " + str(round(tList[1].dx)) + "\ty: " + str(round(tList[1].dy)) + "\tz: " + str(round(tList[1].dz)) )
+    else:
+        statusbar_2.config(text = "Tr.2")
     if len(tList) > 2:
-        statusbar_3.config(text = "Delta T3:\t " + tList[2].tracker_type +" \tx: " + str(round(tList[2].dx)) + "\ty: " + str(round(tList[2].dy)) + "\tz: " + str(round(tList[2].dz)) )
-        
+        statusbar_3.config(text = "Tr.3:  " + tList[2].tracker_type +" \tx: " + str(round(tList[2].dx)) + "\ty: " + str(round(tList[2].dy)) + "\tz: " + str(round(tList[2].dz)) )
+    else:
+        statusbar_3.config(text = "Tr.3")   
     root.after(200,Update_statusbar)
 
 # Controll indicators
@@ -537,13 +542,13 @@ def Output_control():
         ty = round(y/i)
         tz = round(z/j)
         
-        statusbar_0.config(text = "Output: Trackers:"+tracker+";"+"  x: " + str(tx) + "  y: " + str(ty) + "  z: " + str(tz))
+        statusbar_0.config(text = "Output: Tracker:"+tracker+";"+"  x: " + str(tx) + "  y: " + str(ty) + "  z: " + str(tz))
                 
     elif arucoRunning and len(aList)>0:
         statusbar_0.config(text = "Output: Aruco:  x=%2.0f y=%2.0f z=%2.0f roll=%2.0f pitch=%2.0f yaw=%2.0f"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
     
     else:
-        statusbar_0.config(text="")
+        statusbar_0.config(text="Output:")
         
     root.after(200, Output_control)
 
