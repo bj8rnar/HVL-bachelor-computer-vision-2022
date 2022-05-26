@@ -1,4 +1,4 @@
-# Test 12 Kirieg
+# Kirieg Check 13 
 # Test Bj8rnar
 
 from tkinter import *
@@ -243,8 +243,9 @@ class Aruco:
         self.yaw = 0
 
         #--- Get the camera calibration path
-        calib_path  = 'Calibration/'
-        self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
+        os.chdir('./Calibration')
+        calib_path  = ""#'Calibration/'
+        self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',') #calib_path+
         self.camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
 
         #--- 180 deg rotation matrix around the x axis
@@ -616,14 +617,19 @@ def SendData():
 # Function click connect
 def Connect_UDP_Click():
     global ip, port
+
     try:
         port = int(entry_port.get())
     except:
+        #entry_port.config({"background": "pink"})
+       # port = 5433
         print("Not valid port input")
+        
     try:
         ip = str(entry_ip.get())
     except:
         print("Not valid IP input")
+        #entry_ip.config({"background": "pink"})
 
     print("Program: Socket Connected")
 #-------------------------------Send data end-----------------------------    
@@ -650,7 +656,7 @@ def Cal_Click():
     frame_Cal = LabelFrame(Top, text= "Camera", padx= 5, pady= 5 )
     frame_Cal.grid(row=0, column=2, rowspan= 8)
 
-    workingFolder = os.chdir("Cal_Images")
+    workingFolder = os.chdir("./Cal_Images")
 
 
     def Start_cam_cal():
