@@ -11,7 +11,6 @@ from turtle import update
 from PIL import ImageTk, Image
 from click import command
 import cv2
-from matplotlib.pyplot import text
 import numpy as np
 import os
 import sys
