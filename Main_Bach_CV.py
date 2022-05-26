@@ -1,4 +1,4 @@
-# Kirieg Check 13 
+# Kirieg Check 14
 # Test Bj8rnar
 
 from tkinter import *
@@ -14,8 +14,6 @@ import glob
 import socket
 import time, math
 import cv2.aruco as aruco
-
-
 
 #------------------------------------------------------------------
 #-------------------------Socket-----------------------------------
@@ -222,19 +220,23 @@ class Tracker:
 #-----------------------------------------------------------------
 #------------------------------Aruco------------------------------
 class Aruco:   
-    def __init__(self, video_capture):    
+    def __init__(self, video_capture):  
+          
         self.cap = video_capture
+        
         try:
             self.id_to_find  = int(entry_aruco_id.get())
             entry_aruco_id.config({"background": "white"})
         except:
             entry_aruco_id.config({"background": "pink"})
+            self.id_to_find = 1
             print("Invalid entry id")
         try:
             self.marker_size  = float(entry_aruco_size.get())
             entry_aruco_size.config({"background": "white"})
         except:
             entry_aruco_size.config({"background": "pink"})
+            self.marker_size = 10
             print("Invalid entry size aruco marker")
         
         #-- Outputs
@@ -384,15 +386,13 @@ def Show_frames_one():
                         cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, Colors.Red, 2, 3)
                         # Display tracker type on frame:
                         cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
-                        # Display FPS on frame:
-                        cv2.putText(frame, "FPS : " + str(int(obj.fps)), (180,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1) 
-                    
+                        cv2.putText(frame, "Setpoint", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
                         j+=25   # Move text down screen if more trackers
                     except:
                         print("Error update tracker")
                         obj.error = True
                     
-            cv2.putText(frame, "Refbox", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
+            
                 
             cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(cv2image).resize((1024, 720))
@@ -893,15 +893,16 @@ if __name__ == "__main__":
     label_window_2 = Label(frame_0, text="Tracker 2")
     label_window_3 = Label(frame_0, text="Tracker 3")
     label_Delta_method = Label(frame_0, text="Delta method")
-    label_port = Label(frame_0, text="Port:")
-    label_ip = Label(frame_0, text="IP:")
+    label_port = Label(frame_0, text="Port [xxxx]:")
+    label_ip = Label(frame_0, text="Host IP [0.0.0.0]:")
     label_x = Label(frame_0, text="")
     label_x2 = Label(frame_0, text="")
     label_x3 = Label(frame_0, text="")
     label_UDP = Label(frame_0, text="UDP Output:")
-    label_id = Label(frame_0, text="Aruco id")
-    label_size = Label(frame_0, text="Aruco size")
-    label_dictonary = Label(frame_0, text="Dictionary")
+    label_id = Label(frame_0, text="Aruco id:")
+    label_size = Label(frame_0, text="Aruco size [cm]:")
+    label_dictonary = Label(frame_0, text="Dictionary:")
+    
 
     # Statusbar define:
     statusbar_0 = Label(frame_0, text="Output: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
