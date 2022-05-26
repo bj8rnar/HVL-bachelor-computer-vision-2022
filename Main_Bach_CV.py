@@ -11,7 +11,6 @@ from turtle import update
 from PIL import ImageTk, Image
 from click import command
 import cv2
-from matplotlib.pyplot import text
 import numpy as np
 import os
 import sys
@@ -535,10 +534,10 @@ def Output_control():
                 j += 1
                 if (obj.tracker_type == "MOSSE") and (len(tList)>1):     # Not possible to use Mosse for z estimation                  
                     j -= 1
-                elif obj.tracker_type == "MOSSE" and len(tList)==1:  # If only Mosse tracker are beeing used
+                elif obj.tracker_type == "MOSSE" and len(tList)==1:      # If only Mosse tracker are beeing used
                     obj.z = 0
                     j = 1
-                elif obj.tracker_type != "MOSSE" and len(tList)>=1:
+                elif obj.tracker_type != "MOSSE" and len(tList)>=1:    
                     z += obj.dz
                                             
                 tracker = tracker + "/" + obj.tracker_type[0:3]
@@ -549,10 +548,10 @@ def Output_control():
         ty = round(y/i)
         tz = round(z/j)
         
-        statusbar_0.config(text = "Output: Tracker:"+tracker+";"+"  x: " + str(tx) + "  y: " + str(ty) + "  z: " + str(tz))
+        statusbar_0.config(text = "Output: Tracker:"+tracker+";"+" \tx: " + str(tx) + "\ty: " + str(ty) + "\tz: " + str(tz))
                 
     elif arucoRunning and len(aList)>0:
-        statusbar_0.config(text = "Output: Aruco:  x=%2.0f y=%2.0f z=%2.0f roll=%2.0f pitch=%2.0f yaw=%2.0f"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
+        statusbar_0.config(text = "Output: Aruco:  x: %2.0f  y: %2.0f  z:%2.0f\troll: %2.0f  pitch:%2.0f  yaw:%2.0f"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
     
     else:
         statusbar_0.config(text="Output:")
