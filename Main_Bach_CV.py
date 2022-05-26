@@ -1009,7 +1009,6 @@ if __name__ == "__main__":
         cap = cv2.VideoCapture(0)
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
     
-
     Button_controll()
     Show_frames_one()
     Update_statusbar()
