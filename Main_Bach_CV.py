@@ -533,12 +533,12 @@ def Output_control():
                 y += obj.dy
                 i += 1
                 j += 1
-                if obj.tracker_type == "MOSSE" and len(tList)>1:     # Not possible to use Mosse for z estimation                  
+                if (obj.tracker_type == "MOSSE") and (len(tList)>1):     # Not possible to use Mosse for z estimation                  
                     j -= 1
                 elif obj.tracker_type == "MOSSE" and len(tList)==1:  # If only Mosse tracker are beeing used
                     obj.z = 0
                     j = 1
-                else:
+                elif obj.tracker_type != "MOSSE" and len(tList)>=1:
                     z += obj.dz
                                             
                 tracker = tracker + "/" + obj.tracker_type[0:3]
@@ -1007,7 +1007,6 @@ if __name__ == "__main__":
     # Default camerasource if no tracker selected
     if len(tList) == 0:
         cap = cv2.VideoCapture(0)
-    #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
     
     Button_controll()
     Show_frames_one()
