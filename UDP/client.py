@@ -10,7 +10,6 @@ message = "Hello"
 try:
     print("Client: " + message)
     client_socket.sendto(message.encode(), (host,5432))
-    https://github.com/bj8rnar/HVL-bachelor-computer-vision-2022/blob/main/UDP/klient.py
     data, server = client_socket.recvfrom(4092)
     data = data.decode()
     print("Client: " + data)

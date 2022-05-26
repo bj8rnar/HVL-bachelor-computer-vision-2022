@@ -21,8 +21,8 @@ import cv2.aruco as aruco
 #-------------------------Socket-----------------------------------
 main_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
-ip = 'localhost'     # IP 127.0.0.1
-port = 5433             # Port
+ip = 'localhost'     # Set host ip IP
+port = 5000             # Port
 print("Program: Socket Created")
 #------------------------------------------------------------------
 
@@ -225,14 +225,8 @@ class Aruco:
     def __init__(self, video_capture):    
         #--- Define tag
         self.cap = video_capture
-        try:
-            self.id_to_find  = int(entry_aruco_id.get())
-        except:
-            print("Invalid entry id")
-        try:
-            self.marker_size  = float(entry_aruco_size.get()) #9.5 #- [cm]
-        except:
-            print("Invalid entry size aruco marker")
+        self.id_to_find  = 3
+        self.marker_size  = 9.5 #- [cm]
         
         #-- Outputs
         self.x = 0
@@ -255,13 +249,9 @@ class Aruco:
         self.R_flip[2,2] =-1.0
 
         #--- Define the aruco dictionary
-        if aruco_lib_drop.get() == "4x4_100":
-            self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
-        elif aruco_lib_drop.get() == "5x5_100":
-            self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
-        elif aruco_lib_drop.get() == "Classic":
-            self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
-            
+        #aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
+        self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
+        #aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
         self.parameters  = aruco.DetectorParameters_create()
 
         #-- Font for the text in the image
@@ -352,9 +342,8 @@ class Aruco:
         
         
         
-#-----------------------------------------------------------------------
+#----------------------------------------------------------------
 #--------------------------GUI Update-----------------------------------
-
 def Aruco_Click():
     Stop_all_trackers()
     a = Aruco(cap)
@@ -362,6 +351,7 @@ def Aruco_Click():
     arucoRunning = True
     aList.append(a)
     aList[0].Aruco_run()
+    #a.Aruco_run()
       
     
 # Function that shows bbox and refbox from trackers on screen
@@ -424,6 +414,9 @@ def Click_multi_start():
     for obj in tList:
         obj.Start()
     
+    if tList[0].tracker_running:
+        SendData()
+    
 # Retrieve the selected camera source
 def Camera_Select():
     return int(camera_drop_1.get())
@@ -439,22 +432,15 @@ def Stop_all_trackers():
     global arucoRunning
     arucoRunning=False
 
-
-
 # Updates the statusbar with the offset        
 def Update_statusbar():
     if len(tList) > 0:
-        statusbar_1.config(text = "Tr.1:  " + tList[0].tracker_type +" \tx: " + str(round(tList[0].dx)) + "\ty: " + str(round(tList[0].dy)) + "\tz: " + str(round(tList[0].dz)))
-    else:
-        statusbar_1.config(text = "Tr.1")
+        statusbar_1.config(text = "Delta T1:\t " + tList[0].tracker_type +" \tx: " + str(round(tList[0].dx)) + "\ty: " + str(round(tList[0].dy)) + "\tz: " + str(round(tList[0].dz)))
     if len(tList) > 1:
-        statusbar_2.config(text = "Tr.2:  " + tList[1].tracker_type +" \tx: " + str(round(tList[1].dx)) + "\ty: " + str(round(tList[1].dy)) + "\tz: " + str(round(tList[1].dz)) )
-    else:
-        statusbar_2.config(text = "Tr.2")
+        statusbar_2.config(text = "Delta T2:\t " + tList[1].tracker_type +" \tx: " + str(round(tList[1].dx)) + "\ty: " + str(round(tList[1].dy)) + "\tz: " + str(round(tList[1].dz)) )
     if len(tList) > 2:
-        statusbar_3.config(text = "Tr.3:  " + tList[2].tracker_type +" \tx: " + str(round(tList[2].dx)) + "\ty: " + str(round(tList[2].dy)) + "\tz: " + str(round(tList[2].dz)) )
-    else:
-        statusbar_3.config(text = "Tr.3")   
+        statusbar_3.config(text = "Delta T3:\t " + tList[2].tracker_type +" \tx: " + str(round(tList[2].dx)) + "\ty: " + str(round(tList[2].dy)) + "\tz: " + str(round(tList[2].dz)) )
+        
     root.after(200,Update_statusbar)
 
 # Controll indicators
@@ -466,7 +452,7 @@ def Update_Indicators():
         elif tList[0].warning & tList[0].tracker_running:
             Indicator_1.itemconfig(my_oval_1, fill="yellow")
         elif tList[0].tracker_running:
-            Indicator_1.itemconfig(my_oval_1, fill="lime")
+            Indicator_1.itemconfig(my_oval_1, fill="green")
         else:
             Indicator_1.itemconfig(my_oval_1, fill="grey")
     if len(tList) > 1:
@@ -475,7 +461,7 @@ def Update_Indicators():
         elif tList[1].warning & tList[1].tracker_running:
             Indicator_2.itemconfig(my_oval_2, fill="yellow")
         elif tList[1].tracker_running:
-            Indicator_2.itemconfig(my_oval_2, fill="lime")
+            Indicator_2.itemconfig(my_oval_2, fill="green")
         else:
             Indicator_2.itemconfig(my_oval_2, fill="grey")
     if len(tList) > 2:
@@ -484,7 +470,7 @@ def Update_Indicators():
         elif tList[2].warning & tList[2].tracker_running:
             Indicator_3.itemconfig(my_oval_3, fill="yellow")
         elif tList[2].tracker_running:
-            Indicator_3.itemconfig(my_oval_3, fill="lime")
+            Indicator_3.itemconfig(my_oval_3, fill="green")
         else:
             Indicator_3.itemconfig(my_oval_3, fill="grey")
     if len(tList) == 0:
@@ -494,13 +480,14 @@ def Update_Indicators():
         
     # Aruco indicator:
     if arucoRunning:
-        Indicator_4.itemconfig(my_oval_4, fill="lime")
+        Indicator_4.itemconfig(my_oval_4, fill="blue")
     if not arucoRunning:
         Indicator_4.itemconfig(my_oval_4, fill="grey")
         
         
     root.after(400, Update_Indicators)
-     
+    
+    
     
 #-------Errordetection--------  
 
@@ -517,11 +504,11 @@ def Error_timer():
 # If tracker moves more than 50 pixles in 500 millisec, warning vil be triggered.
 def Error_detection():
     for obj in tList:   
-        if abs(obj.dx) >= (abs(pre_dx)+100):
+        if abs(obj.dx) >= (abs(pre_dx)+50):
             obj.warning = True
-        if abs(obj.dy) >= (abs(pre_dy)+100):
+        if abs(obj.dy) >= (abs(pre_dy)+50):
             obj.warning = True
-        if abs(obj.dz) >= (abs(pre_dz)+100):
+        if abs(obj.dz) >= (abs(pre_dz)+50):
             obj.warning = True
     root.after(1500, Error_detection)
     
@@ -529,39 +516,24 @@ def Error_detection():
 
 # Themporary output controll:
 def Output_control():
-    i=0; j=0; x=0; y=0; z=0; tracker=""
-    global tx, ty, tz
-    tx=0; ty=0; tz=0
+    i=0; y=0; x=0; z=0; tracker=""
     if len(tList)>0: 
         for obj in tList:
             if obj.tracker_running and not obj.error:
                 x += obj.dx
                 y += obj.dy
-                i += 1
-                j += 1
-                if obj.tracker_type == "MOSSE" and len(tList)>1:     # Not possible to use Mosse for z estimation                  
-                    j -= 1
-                elif obj.tracker_type == "MOSSE" and len(tList)==1:  # If only Mosse tracker are beeing used
-                    obj.z = 0
-                    j = 1
-                else:
+                if not obj.tracker_type == "MOSSE":     # Mosse can not be used for estimating depth
                     z += obj.dz
-                                            
+                    i += 1
                 tracker = tracker + "/" + obj.tracker_type[0:3]
                 
-            else: i=1; j=1;   # Handling /0
-
-        tx = round(x/i)
-        ty = round(y/i)
-        tz = round(z/j)
-        
-        statusbar_0.config(text = "Output: Tracker:"+tracker+";"+"  x: " + str(tx) + "  y: " + str(ty) + "  z: " + str(tz))
+            else: i=1   # Handling /0
+    
+            statusbar_0.config(text = "Output: Trackers:"+tracker+";"+"  x: " + str(round(x/i)) + "  y: " + str(round(y/i)) + "  z: " + str(round(z/i)))
                 
     elif arucoRunning and len(aList)>0:
         statusbar_0.config(text = "Output: Aruco:  x=%2.0f y=%2.0f z=%2.0f roll=%2.0f pitch=%2.0f yaw=%2.0f"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
-    
-    else:
-        statusbar_0.config(text="Output:")
+        
         
     root.after(200, Output_control)
 
@@ -587,26 +559,21 @@ def Button_controll():
 #--------------------------------GUI Update End----------------------------------------
  
  
-     
-
-#--------------------------------Send data-------------------------------------- 
-def SendData():
-    telegram = ""
-    global tx,ty,tz
-    # standard string format: $TX000000Y000000Z000000#
-    if trackRunning and len(tList)>0:
+ 
     
-        telegram = ("$TRACKX%.2fY%.2fZ%.2f#"%(tx, ty, tz))
-        print(telegram)
-        
-    elif arucoRunning and len(aList)>0:
-        #$AX000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
-        telegram = ("$ARUCOX%.2fY%.2fZ%.2fRO%.2fPI%.2fYA%.2f#"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
-        print(telegram)
-    try:
-        main_socket.sendto(telegram.encode(), (ip,port))
-    except:
-        print("Cannot send data UDP")
+
+#-------------------------------Send data-------------------------------------- 
+def SendData():
+    x = '{:.0f}'.format(tList[0].dx)
+    y = '{:.0f}'.format(tList[0].dy)
+    z = '{:.0f}'.format(tList[0].dz)
+    #pitch = 
+    #yaw =
+    #roll =
+    
+    telegram = '$X'+x.rjust(5,'0')+'Y'+y.rjust(5,'0')+'Z'+z.rjust(5,'0')+'PITCH'+'YAW'+'ROLL'+'#'   # standard string format: $X000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
+
+    main_socket.sendto(telegram.encode(), (ip,port))
     
     # data, client = main_socket.recvfrom(65535)          #For testing av utdata med server.
     # data = data.decode()
@@ -632,6 +599,8 @@ def Connect_UDP_Click():
         #entry_ip.config({"background": "pink"})
 
     print("Program: Socket Connected")
+
+
 #-------------------------------Send data end-----------------------------    
     
     
@@ -659,6 +628,7 @@ def Cal_Click():
     workingFolder = os.chdir("./Cal_Images")
 
 
+
     def Start_cam_cal():
         #Start Camera button
         global start_cam_cal_btn
@@ -683,6 +653,8 @@ def Cal_Click():
         #Camera Frame and video capture
         Cal_label.frame_num = 0
         Cal_label.grid(row=0, column=0)
+        
+        
         
         #Checking if the number of pictures are enough or good
         Ant_pic_err_lab1 = Label(Top, text="")
@@ -723,6 +695,7 @@ def Cal_Click():
             imgpil.close()
             Pic_taken()
          
+         
         def Pic_taken():    
             #count pictures taken
             Fold_Path = os.getcwd()
@@ -734,6 +707,7 @@ def Cal_Click():
             label_Pic_counter = Label(Top, text="Pictures: "+ str(count))
             label_Pic_counter.grid(row= 3, column= 0)
         
+
         #Calibrate function
         def Start_Calib():
                  
@@ -768,6 +742,14 @@ def Cal_Click():
                 dimension       = float(sys.argv[5])
 
             if '-h' in sys.argv or '--h' in sys.argv:
+                print("\n IMAGE CALIBRATION GIVEN A SET OF IMAGES")
+                print(" call: python cameracalib.py <folder> <image type> <num rows (9)> <num cols (6)> <cell dimension (25)>")
+                print("\n The script will look for every image in the provided folder and will show the pattern found." \
+                    " User can skip the image pressing ESC or accepting the image with RETURN. " \
+                    " At the end the end the following files are created:" \
+                    "  - cameraDistortion.txt" \
+                    "  - cameraMatrix.txt \n\n")
+
                 sys.exit()
 
             # Find the images files
@@ -776,6 +758,9 @@ def Cal_Click():
 
             if len(images) < 9:
                 sys.exit()
+
+
+
             else:
                 nPatternFound = 0
                 imgNotGood = images[1]
@@ -804,6 +789,7 @@ def Cal_Click():
                     else:
                         imgNotGood = fname
 
+
             cv2.destroyAllWindows()    
             
             if (nPatternFound > 25):
@@ -822,7 +808,7 @@ def Cal_Click():
                 # crop the image
                 x,y,w,h = roi
                 dst = dst[y:y+h, x:x+w]
-                os.chdir('../Calibration')  
+                os.chdir('../Calibration')
                 cv2.imwrite("calibresult.png",dst)
                 np.savetxt("cameraMatrix.txt", mtx, delimiter=',')
                 np.savetxt("cameraDistortion.txt", dist, delimiter=',')
@@ -859,6 +845,8 @@ def Cal_Click():
     Top.mainloop()
 #--------------------------Calibration end--------------------------
 
+
+
         
 
 
@@ -870,7 +858,7 @@ if __name__ == "__main__":
     root = Tk()
     root.title("Computer vision position estimation") 
     root.iconbitmap('favicon.ico')     # Setts icon for app
-    root.geometry("1580x760")
+    root.geometry("1600x700")
         
         
     #-----------DEFINING Widgets:---------------
@@ -878,23 +866,13 @@ if __name__ == "__main__":
     # Frames define:
     frame_0 = LabelFrame(root, text="", padx=10, pady=10)
     frame_1 = LabelFrame(root, text="Video", padx=3, pady=3)
-    
+
     # Label naming boxes:
-    label_vid_1 = Label(frame_1)
     label_camera = Label(frame_0, text="Camera Source")
     label_window_1 = Label(frame_0, text="Tracker 1")
     label_window_2 = Label(frame_0, text="Tracker 2")
     label_window_3 = Label(frame_0, text="Tracker 3")
     label_Delta_method = Label(frame_0, text="Delta method")
-    label_port = Label(frame_0, text="Port:")
-    label_ip = Label(frame_0, text="IP:")
-    label_x = Label(frame_0, text="")
-    label_x2 = Label(frame_0, text="")
-    label_x3 = Label(frame_0, text="")
-    label_UDP = Label(frame_0, text="UDP Output:")
-    label_id = Label(frame_0, text="Aruco id")
-    label_size = Label(frame_0, text="Aruco size")
-    label_dictonary = Label(frame_0, text="Dictionary")
 
     # Statusbar define:
     statusbar_0 = Label(frame_0, text="Output: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
@@ -917,11 +895,12 @@ if __name__ == "__main__":
     button_quit = Button(frame_0, text="Quit", padx=10, pady=2, command=root.quit)
     button_start_multiple = Button(frame_0, text="Start", padx=10, pady=2, command=lambda:Click_multi_start())
     button_stop_all = Button(frame_0, text="Stop All", padx=10, pady=2, command=lambda:Stop_all_trackers())
-    button_calibrate = Button(frame_0, text="Calibrate", padx=10, pady=2, command=lambda:Cal_Click(),)#Stop_all_trackers()
-    button_aruco = Button(frame_0, text ='Aruco Start', padx=5, pady=1, command=lambda:Aruco_Click())
-    button_connect = Button(frame_0, text= "Connect", padx=10, pady=2, command=lambda:Connect_UDP_Click())
+    button_calibrate = Button(frame_0, text="Calibrate", padx=10, pady=2, command=lambda:[Cal_Click(),Stop_all_trackers()])
+    button_aruco = Button(frame_0, text ='Aruco', padx=10, pady=2, command=lambda:[Aruco_Click()])
     
-    # Dropdown menues
+    label_vid_1 = Label(frame_1)
+    label_vid_1.grid(row=0,column=0)
+
     camera_drop_1 = ttk.Combobox(frame_0, value = [0,1,2,3,5])
     camera_drop_1.current(0)
     tracker_drop_1 = ttk.Combobox(frame_0, value = ["0", "MEDIANFLOW", "CSRT", "MOSSE"])
@@ -932,33 +911,15 @@ if __name__ == "__main__":
     tracker_drop_3.current(0)
     delta_drop = ttk.Combobox(frame_0, value=["Marked object", "Senter screen"])
     delta_drop.current(0)
-    aruco_lib_drop = ttk.Combobox(frame_0, width=7,value = ["4x4_100", "5x5_100", "Classic"])
-    aruco_lib_drop.current(0)
-    
-    # Text entrys
-    entry_port = Entry(frame_0, width=10 ) 
-    entry_ip = Entry(frame_0, width=10 )
-    entry_aruco_id = Entry(frame_0, width=10)
-    entry_aruco_size = Entry(frame_0, width=10)
     #---------------------------------------------------------
 
     #---------------PLACING ON ROOT:--------------------------
-    # Label placing:
-    label_vid_1.grid(row=0,column=0)
+    # Label plassering:
     label_camera.grid(row=0,column=0)
     label_window_1.grid(row=1,column=0)
     label_window_2.grid(row=2,column=0)
     label_window_3.grid(row=3,column=0)
     label_Delta_method.grid(row=4,column=0)
-    label_x.grid(row=12,column=0)
-    label_x2.grid(row=7,column=0)
-    label_x3.grid(row=8,column=0)
-    label_UDP.grid(row=13,column=0)
-    label_port.grid(row=14,column=0)
-    label_ip.grid(row=15,column=0)
-    label_id.grid(row=3, column=4)
-    label_size.grid(row=4, column=4)
-    label_dictonary.grid(row=5,column=4)
 
     # Dropdown menues:
     camera_drop_1.grid(row=0,column=1)
@@ -966,15 +927,13 @@ if __name__ == "__main__":
     tracker_drop_2.grid(row=2,column=1)
     tracker_drop_3.grid(row=3,column=1)
     delta_drop.grid(row=4,column=1)
-    aruco_lib_drop.grid(row=5,column=5)
 
     # Buttons:
-    button_quit.grid(row=15,column=6)
-    button_start_multiple.grid(row=0,column=2)
-    button_stop_all.grid(row=0,column=3)
+    button_quit.grid(row=6,column=5)
+    button_start_multiple.grid(row=0,column=3)
+    button_stop_all.grid(row=0,column=4)
     button_calibrate.grid(row=0, column=5)
     button_aruco.grid(row=2, column=5)
-    button_connect.grid(row=15, column=2)
 
     # Frames:
     frame_0.grid(row=0,column=0,padx=2, pady=2)
@@ -991,14 +950,7 @@ if __name__ == "__main__":
     Indicator_2.grid(row=9,column=6)
     Indicator_3.grid(row=10,column=6)
     Indicator_4.grid(row=2,column=6)
-    
-    # Entrys
-    entry_port.grid(row=14,column=1)
-    entry_ip.grid(row=15,column=1)
-    entry_aruco_id.grid(row=3,column=5)
-    entry_aruco_size.grid(row=4,column=5)
-    
-    
+ 
     #-------------------------------------------------------
  
 
@@ -1024,7 +976,7 @@ if __name__ == "__main__":
     Update_statusbar()
     Update_Indicators()
     Output_control()
-    SendData()
+    
   
     
     root.mainloop()
