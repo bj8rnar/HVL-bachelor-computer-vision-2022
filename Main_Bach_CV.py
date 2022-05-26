@@ -1,12 +1,17 @@
-# Kirieg Check 14
-# Test Bj8rnar
-
+#-------------------------------------------------------------------
+#--------------------------TRACKING GUI-----------------------------
+# Program uses OpenCV library to calibrate camera, track objekts and
+# detects Arcuo-tags. The tracking algoritm sends the mean value of 
+# the kombined trackers via UDP. Aruco send translation between camera
+# and marker.
+#-------------------------------------------------------------------
 from tkinter import *
 from tkinter import ttk
-from turtle import update        # To use combobox
+from turtle import update
 from PIL import ImageTk, Image
 from click import command
 import cv2
+from matplotlib.pyplot import text
 import numpy as np
 import os
 import sys
@@ -18,9 +23,8 @@ import cv2.aruco as aruco
 #------------------------------------------------------------------
 #-------------------------Socket-----------------------------------
 main_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-
 ip = 'localhost'     # IP 127.0.0.1
-port = 5433             # Port
+port = 5433          # Port
 print("Program: Socket Created")
 #------------------------------------------------------------------
 
@@ -111,13 +115,11 @@ class Tracker:
         Error_timer()    
         Error_detection()
         
-       
         
     def Run(self):    
         if self.tracker_running == True:
             global trackRunning
             trackRunning = True
-            
             
             self.error = False
             # Read a new frame
@@ -164,15 +166,13 @@ class Tracker:
         self.Run()
         global trackRunning
         trackRunning = True
-        
     
     def Stop_tracker(self):
         self.tracker_running = False
-    
 
     ## Calculate offsett from the center object and where det bbox was first sett:
     def Create_offsett_from_ref_bbox(self):
-         # Defining corner p1 and p2 for refferancebox
+        # Defining corner p1 and p2 for refferancebox
         self.refBox = self.bbox
         self.refP1 = (int(self.refBox[0]), int(self.refBox[1]))
         self.refP2 = (int(self.refBox[0] + self.refBox[2]), int(self.refBox[1] + self.refBox[3]))
@@ -214,8 +214,7 @@ class Tracker:
         self.dz = float(self.refBox[3] - self.bbox[3])
               
 #--------------------------Tracker end----------------------------
-            
-            
+                    
             
 #-----------------------------------------------------------------
 #------------------------------Aruco------------------------------
@@ -350,10 +349,8 @@ class Aruco:
                 label_vid_1.imgtk = imgtk
                 label_vid_1.configure(image=imgtk)
             
-            root.after(tms, self.Aruco_run)
-
-      
-#----------------------Aruco END--------------------------------       
+            root.after(tms, self.Aruco_run)   
+#----------------------Aruco END---------------------------------------     
         
         
         
@@ -366,8 +363,7 @@ def Aruco_Click():
     global arucoRunning
     arucoRunning = True
     aList.append(a)
-    aList[0].Aruco_run()
-      
+    aList[0].Aruco_run()     
     
 # Function that shows bbox and refbox from trackers on screen
 def Show_frames_one():    
@@ -391,9 +387,7 @@ def Show_frames_one():
                     except:
                         print("Error update tracker")
                         obj.error = True
-                    
-            
-                
+ 
             cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(cv2image).resize((1024, 720))
             imgtk = ImageTk.PhotoImage(image = img)       
@@ -416,20 +410,20 @@ def Click_multi_start():
     arucoRunning = False
     
     bbox = New_ROI()
-    
+
     if tracker_drop_1.get() != "0":
         tList.append(Tracker(tracker_drop_1.get(), bbox, cap, Colors.Aqua))
     if tracker_drop_2.get() != "0":
-        tList.append(Tracker(tracker_drop_2.get(), bbox ,cap, Colors.Lime))
+        tList.append(Tracker(tracker_drop_2.get(), bbox, cap, Colors.Lime))
     if tracker_drop_3.get() != "0":
-        tList.append(Tracker(tracker_drop_3.get(), bbox ,cap, Colors.Yellow))
+        tList.append(Tracker(tracker_drop_3.get(), bbox, cap, Colors.Yellow))
         
     for obj in tList:
         obj.Start()
     
 # Retrieve the selected camera source
 def Camera_Select():
-    return int(camera_drop_1.get())
+    int(camera_drop_1.get())
 
 # Function for stopping the tracker functions
 def Stop_all_trackers():
@@ -441,8 +435,6 @@ def Stop_all_trackers():
     trackRunning=False
     global arucoRunning
     arucoRunning=False
-
-
 
 # Updates the statusbar with the offset        
 def Update_statusbar():
@@ -501,11 +493,10 @@ def Update_Indicators():
     if not arucoRunning:
         Indicator_4.itemconfig(my_oval_4, fill="grey")
         
-        
     root.after(400, Update_Indicators)
      
     
-#-------Errordetection--------  
+#-------Errordetection--------------  
 
 # Timer for measuring time of movement.
 def Error_timer():
@@ -528,7 +519,7 @@ def Error_detection():
             obj.warning = True
     root.after(1500, Error_detection)
     
-#-------------------------  
+#------------------------------------
 
 # Themporary output controll:
 def Output_control():
@@ -587,11 +578,10 @@ def Button_controll():
         button_calibrate.config(state=NORMAL)
     
     root.after(600, Button_controll)
-#--------------------------------GUI Update End----------------------------------------
+#--------------------------------GUI Update End---------------------------------
  
  
      
-
 #--------------------------------Send data-------------------------------------- 
 def SendData():
     telegram = ""
@@ -608,15 +598,17 @@ def SendData():
         print(telegram)
     try:
         main_socket.sendto(telegram.encode(), (ip,port))
+        
         entry_ip.config({"background": "white"})
+        Indicator_5_UDP.itemconfig(my_oval_1, fill="lime")
     except:
         entry_ip.config({"background": "pink"})
         print("Cannot send data UDP")
+        Indicator_5_UDP.itemconfig(my_oval_1, fill="grey")
     
     # data, client = main_socket.recvfrom(65535)          #For testing av utdata med server.
     # data = data.decode()
     # print("Main: " + data)
-    
     root.after(1000, SendData)
     
 # Function click connect
@@ -637,17 +629,7 @@ def Connect_UDP_Click():
         entry_ip.config({"background": "pink"})
 
     print("Program: Socket Connected")
-#-------------------------------Send data end-----------------------------    
-# def Update_Entry_int(variable,entry):
-#     try:
-#         variable = entry.get()
-#         int(variable)
-#         entry.config({"background": "white"})
-#     except:
-#         entry.config({"background": "pink"})
-#         print("Not valid input: " + str(variable))
-
-    
+#-------------------------------Send data end----------------------------    
     
     
 #------------------------------------------------------------------------ 
@@ -864,7 +846,7 @@ def Cal_Click():
         show_frames()
         Pic_taken()
     Top.mainloop()
-#--------------------------Calibration end--------------------------
+#--------------------------Calibration end-------------------------------
 
         
 
@@ -877,11 +859,10 @@ if __name__ == "__main__":
     root = Tk()
     root.title("Computer vision position estimation") 
     root.iconbitmap('favicon.ico')     # Setts icon for app
-    root.geometry("1580x760")
-        
+    root.geometry("1500x760")
         
     #-----------DEFINING Widgets:---------------
-
+    
     # Frames define:
     frame_0 = LabelFrame(root, text="", padx=10, pady=10)
     frame_1 = LabelFrame(root, text="Video", padx=3, pady=3)
@@ -889,20 +870,20 @@ if __name__ == "__main__":
     # Label naming boxes:
     label_vid_1 = Label(frame_1)
     label_camera = Label(frame_0, text="Camera Source")
-    label_window_1 = Label(frame_0, text="Tracker 1")
-    label_window_2 = Label(frame_0, text="Tracker 2")
-    label_window_3 = Label(frame_0, text="Tracker 3")
+    label_Tracker_1 = Label(frame_0, text="Tracker 1")
+    label_Tracker_2 = Label(frame_0, text="Tracker 2")
+    label_Tracker_3 = Label(frame_0, text="Tracker 3")
     label_Delta_method = Label(frame_0, text="Delta method")
     label_port = Label(frame_0, text="Port [xxxx]:")
     label_ip = Label(frame_0, text="Host IP [0.0.0.0]:")
     label_x = Label(frame_0, text="")
     label_x2 = Label(frame_0, text="")
     label_x3 = Label(frame_0, text="")
+    label_x4 = Label(frame_0, text="")
     label_UDP = Label(frame_0, text="UDP Output:")
     label_id = Label(frame_0, text="Aruco id:")
     label_size = Label(frame_0, text="Aruco size [cm]:")
     label_dictonary = Label(frame_0, text="Dictionary:")
-    
 
     # Statusbar define:
     statusbar_0 = Label(frame_0, text="Output: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
@@ -915,17 +896,19 @@ if __name__ == "__main__":
     Indicator_2 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
     Indicator_3 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
     Indicator_4 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
+    Indicator_5_UDP = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
     
     my_oval_1 = Indicator_1.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
     my_oval_2 = Indicator_2.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
     my_oval_3 = Indicator_3.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
     my_oval_4 = Indicator_4.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
+    my_oval_5 = Indicator_5_UDP.create_oval(4, 4, 18, 18)  # Create a circle on the Canvas
 
     # Buttons define:
     button_quit = Button(frame_0, text="Quit", padx=10, pady=2, command=root.quit)
-    button_start_multiple = Button(frame_0, text="Start", padx=10, pady=2, command=lambda:Click_multi_start())
+    button_start_multiple = Button(frame_0, text="Start Tracker", padx=2, pady=1, command=lambda:Click_multi_start())
     button_stop_all = Button(frame_0, text="Stop All", padx=10, pady=2, command=lambda:Stop_all_trackers())
-    button_calibrate = Button(frame_0, text="Calibrate", padx=10, pady=2, command=lambda:Cal_Click(),)#Stop_all_trackers()
+    button_calibrate = Button(frame_0, text="Calibrate", padx=8, pady=1, command=lambda:Cal_Click(),)#Stop_all_trackers()
     button_aruco = Button(frame_0, text ='Aruco Start', padx=5, pady=1, command=lambda:Aruco_Click())
     button_connect = Button(frame_0, text= "Connect", padx=10, pady=2, command=lambda:Connect_UDP_Click())
     
@@ -944,8 +927,10 @@ if __name__ == "__main__":
     aruco_lib_drop.current(0)
     
     # Text entrys
-    entry_port = Entry(frame_0, width=10 ) 
-    entry_ip = Entry(frame_0, width=10 )
+    entry_port = Entry(frame_0, width=14 ) 
+    entry_port.insert(0, "5433")
+    entry_ip = Entry(frame_0, width=14 )
+    entry_ip.insert(0, "127.0.0.1")
     entry_aruco_id = Entry(frame_0, width=10)
     entry_aruco_size = Entry(frame_0, width=10)
     #---------------------------------------------------------
@@ -954,63 +939,62 @@ if __name__ == "__main__":
     # Label placing:
     label_vid_1.grid(row=0,column=0)
     label_camera.grid(row=0,column=0)
-    label_window_1.grid(row=1,column=0)
-    label_window_2.grid(row=2,column=0)
-    label_window_3.grid(row=3,column=0)
-    label_Delta_method.grid(row=4,column=0)
-    label_x.grid(row=12,column=0)
-    label_x2.grid(row=7,column=0)
-    label_x3.grid(row=8,column=0)
-    label_UDP.grid(row=13,column=0)
-    label_port.grid(row=14,column=0)
-    label_ip.grid(row=15,column=0)
-    label_id.grid(row=3, column=4)
-    label_size.grid(row=4, column=4)
-    label_dictonary.grid(row=5,column=4)
+    label_Tracker_1.grid(row=2,column=0)
+    label_Tracker_2.grid(row=3,column=0)
+    label_Tracker_3.grid(row=4,column=0)
+    label_Delta_method.grid(row=5,column=0)
+    label_x.grid(row=13,column=0)
+    label_x2.grid(row=8,column=0)
+    label_x3.grid(row=9,column=0)
+    label_x4.grid(row=1,column=1)
+    label_UDP.grid(row=14,column=0)
+    label_port.grid(row=15,column=0)
+    label_ip.grid(row=16,column=0)
+    label_id.grid(row=3, column=4, sticky=E)
+    label_size.grid(row=4, column=4, sticky=E)
+    label_dictonary.grid(row=5,column=4,sticky=E)
 
     # Dropdown menues:
     camera_drop_1.grid(row=0,column=1)
-    tracker_drop_1.grid(row=1,column=1)
-    tracker_drop_2.grid(row=2,column=1)
-    tracker_drop_3.grid(row=3,column=1)
-    delta_drop.grid(row=4,column=1)
+    tracker_drop_1.grid(row=2,column=1)
+    tracker_drop_2.grid(row=3,column=1)
+    tracker_drop_3.grid(row=4,column=1)
+    delta_drop.grid(row=5,column=1)
     aruco_lib_drop.grid(row=5,column=5)
 
     # Buttons:
-    button_quit.grid(row=15,column=6)
-    button_start_multiple.grid(row=0,column=2)
-    button_stop_all.grid(row=0,column=3)
-    button_calibrate.grid(row=0, column=5)
+    button_quit.grid(row=16,column=5)
+    button_start_multiple.grid(row=2,column=2)
+    button_stop_all.grid(row=13,column=5)
+    button_calibrate.grid(row=0, column=2)
     button_aruco.grid(row=2, column=5)
-    button_connect.grid(row=15, column=2)
+    button_connect.grid(row=16, column=2)
 
     # Frames:
     frame_0.grid(row=0,column=0,padx=2, pady=2)
     frame_1.grid(row=0,column=1,padx=2, pady=2)
 
     # Statusbar:
-    statusbar_0.grid(row=11,column=0,columnspan=6, sticky=W+E)
-    statusbar_1.grid(row=8,column=0,columnspan=6, sticky=W+E)
-    statusbar_2.grid(row=9,column=0,columnspan=6, sticky=W+E)
-    statusbar_3.grid(row=10,column=0,columnspan=6, sticky=W+E)
+    statusbar_0.grid(row=12,column=0,columnspan=6, sticky=W+E)
+    statusbar_1.grid(row=9,column=0,columnspan=6, sticky=W+E)
+    statusbar_2.grid(row=10,column=0,columnspan=6, sticky=W+E)
+    statusbar_3.grid(row=11,column=0,columnspan=6, sticky=W+E)
     
     # Canvas Indicator:
-    Indicator_1.grid(row=8,column=6)
-    Indicator_2.grid(row=9,column=6)
-    Indicator_3.grid(row=10,column=6)
+    Indicator_1.grid(row=9,column=6)
+    Indicator_2.grid(row=10,column=6)
+    Indicator_3.grid(row=11,column=6)
     Indicator_4.grid(row=2,column=6)
+    Indicator_5_UDP.grid(row=16,column=3)
     
     # Entrys
-    entry_port.grid(row=14,column=1)
-    entry_ip.grid(row=15,column=1)
+    entry_port.grid(row=15,column=1)
+    entry_ip.grid(row=16,column=1)
     entry_aruco_id.grid(row=3,column=5)
     entry_aruco_size.grid(row=4,column=5)
-    
-    
     #-------------------------------------------------------
  
-
-
+ 
 
     #-------------------------------------------------------
     #-----------------Commands------------------------------
@@ -1025,9 +1009,7 @@ if __name__ == "__main__":
         cap = cv2.VideoCapture(0)
     #cap = cv2.VideoCapture("C:/Users/egrut/OneDrive/Dokumenter/Visual Studio 2019/pythonSaves/openCV/Video/TestRovRevVentil.mp4")
     
-
     Button_controll()
-    
     Show_frames_one()
     Update_statusbar()
     Update_Indicators()
