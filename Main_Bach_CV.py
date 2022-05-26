@@ -223,15 +223,18 @@ class Tracker:
 #------------------------------Aruco------------------------------
 class Aruco:   
     def __init__(self, video_capture):    
-        #--- Define tag
         self.cap = video_capture
         try:
             self.id_to_find  = int(entry_aruco_id.get())
+            entry_aruco_id.config({"background": "white"})
         except:
+            entry_aruco_id.config({"background": "pink"})
             print("Invalid entry id")
         try:
-            self.marker_size  = float(entry_aruco_size.get()) #9.5 #- [cm]
+            self.marker_size  = float(entry_aruco_size.get())
+            entry_aruco_size.config({"background": "white"})
         except:
+            entry_aruco_size.config({"background": "pink"})
             print("Invalid entry size aruco marker")
         
         #-- Outputs
@@ -243,8 +246,8 @@ class Aruco:
         self.yaw = 0
 
         #--- Get the camera calibration path
-        os.chdir('./Calibration')
-        calib_path  = ""#'Calibration/'
+        #os.chdir('./Calibration')
+        calib_path  = './Calibration/'
         self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',') #calib_path+
         self.camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
 
@@ -605,7 +608,9 @@ def SendData():
         print(telegram)
     try:
         main_socket.sendto(telegram.encode(), (ip,port))
+        entry_ip.config({"background": "white"})
     except:
+        entry_ip.config({"background": "pink"})
         print("Cannot send data UDP")
     
     # data, client = main_socket.recvfrom(65535)          #For testing av utdata med server.
@@ -617,24 +622,31 @@ def SendData():
 # Function click connect
 def Connect_UDP_Click():
     global ip, port
-
     try:
         port = int(entry_port.get())
+        entry_port.config({"background": "white"})
     except:
-        #entry_port.config({"background": "pink"})
+        entry_port.config({"background": "pink"})
        # port = 5433
         print("Not valid port input")
-        
+  
     try:
         ip = str(entry_ip.get())
     except:
         print("Not valid IP input")
-        #entry_ip.config({"background": "pink"})
+        entry_ip.config({"background": "pink"})
 
     print("Program: Socket Connected")
 #-------------------------------Send data end-----------------------------    
-    
-    
+# def Update_Entry_int(variable,entry):
+#     try:
+#         variable = entry.get()
+#         int(variable)
+#         entry.config({"background": "white"})
+#     except:
+#         entry.config({"background": "pink"})
+#         print("Not valid input: " + str(variable))
+
     
     
     
@@ -655,9 +667,6 @@ def Cal_Click():
     #Camera Frame 
     frame_Cal = LabelFrame(Top, text= "Camera", padx= 5, pady= 5 )
     frame_Cal.grid(row=0, column=2, rowspan= 8)
-
-    workingFolder = os.chdir("./Cal_Images")
-
 
     def Start_cam_cal():
         #Start Camera button
@@ -699,7 +708,6 @@ def Cal_Click():
         Error_status = Label(Top, text = "Error Status: "+ Error_value)
         Error_status.grid(row= 6, column=0)
 
-
         if not cap.isOpened():
             print("Cannot open camera")
             exit()
@@ -716,16 +724,20 @@ def Cal_Click():
 
         def take_pic():
             #Take picture and save to folder
+            save_path = './Cal_Images'
             file_name = f"{Cal_label.frame_num}.jpg"
+            complete_name = os.path.join(save_path, file_name)
+
             imagetk = Cal_label.imgtk
             imgpil = ImageTk.getimage( imagetk )
-            imgpil.save( file_name, "PNG")
+            imgpil.save( complete_name, "PNG")
             imgpil.close()
             Pic_taken()
-         
-        def Pic_taken():    
+
+        def Pic_taken():
             #count pictures taken
-            Fold_Path = os.getcwd()
+
+            Fold_Path = './Cal_Images'
             count = 0
             for path in os.listdir(Fold_Path):
                 if os.path.isfile(os.path.join(Fold_Path, path)):
@@ -735,17 +747,13 @@ def Cal_Click():
             label_Pic_counter.grid(row= 3, column= 0)
         
         #Calibrate function
-        def Start_Calib():
-                 
+        def Start_Calib():               
             nRows = 9
             nCols = 6
             dimension = 33 #- mm
-            print(os.getcwd)
-            #Cal_Folder = os.chdir("/Calibration")
-            workingFolder   = os.getcwd()
+            workingFolder   = './Cal_Images'
             imageType       = 'jpg'
-            #------------------------------------------
-
+            
             # termination criteria
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, dimension, 0.001)
 
@@ -821,11 +829,10 @@ def Cal_Click():
 
                 # crop the image
                 x,y,w,h = roi
-                dst = dst[y:y+h, x:x+w]
-                os.chdir('../Calibration')  
+                dst = dst[y:y+h, x:x+w] 
                 cv2.imwrite("calibresult.png",dst)
-                np.savetxt("cameraMatrix.txt", mtx, delimiter=',')
-                np.savetxt("cameraDistortion.txt", dist, delimiter=',')
+                np.savetxt("./Calibration/cameraMatrix.txt", mtx, delimiter=',')
+                np.savetxt("./Calibration/cameraDistortion.txt", dist, delimiter=',')
                 
                 #Finding the distortion value
                 mean_error = 0
