@@ -134,12 +134,10 @@ class Tracker:
             frame = frame[y:y+h, x:x+w]
             ################################
                     
-            # Start timer
-            timer = cv2.getTickCount()
+
             # Update tracker
             self.ok, self.bbox = self.tracker.update(self.frame)
-            # Calculate Frames per second (FPS)
-            self.fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+
             # Draw bounding box
             if self.ok:
                 # Tracking success
@@ -377,7 +375,7 @@ def Show_frames_one():
                     try:                
                         # Display refbox:
                         cv2.rectangle(frame, obj.refP1, obj.refP2, Colors.Red, 2, 1 )
-                        # Display bbox:
+                        # Display bbox (Updated region of interest):
                         cv2.rectangle(frame, obj.p1, obj.p2, obj.color, thickness=1)
                         # Display centerpoint refbox:
                         cv2.rectangle(frame, obj.cRefP1, obj.cRefP2, Colors.Red, 2, 3)
