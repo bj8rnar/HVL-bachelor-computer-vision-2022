@@ -244,6 +244,7 @@ class Aruco:
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
+        self.marking = False
 
         #--- Get the camera calibration path
         #os.chdir('./Calibration')
@@ -302,7 +303,6 @@ class Aruco:
         if not trackRunning and arucoRunning:                     
             
             ret, self.frame = self.cap.read()
-
             #-- Convert in gray scale
             gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY) #-- OpenCV stores color images in Blue, Green, Red
 
@@ -311,7 +311,7 @@ class Aruco:
                                     cameraMatrix=self.camera_matrix, distCoeff=self.camera_distortion)
             
             if ids is not None and ids[0] == self.id_to_find:
-                
+                self.marking = True
                 #-- ret = [rvec, tvec, ?]
                 #-- array of rotation and position of each marker in camera frame
                 #-- rvec = [[rvec_1], [rvec_2], ...]    attitude of the marker respect to camera frame
@@ -340,6 +340,8 @@ class Aruco:
                 
                 #-- Update class attitude variables:
                 self.roll, self.pitch, self.yaw = math.degrees(roll_camera), math.degrees(pitch_camera), math.degrees(yaw_camera)
+            else:
+                self.marking = False
                 
             if ret:
                 cv2image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
@@ -348,7 +350,7 @@ class Aruco:
                 label_vid_1.imgtk = imgtk
                 label_vid_1.configure(image=imgtk)
             
-            root.after(tms, self.Aruco_run)   
+            root.after(40, self.Aruco_run)   
 #----------------------Aruco END---------------------------------------     
         
         
@@ -551,7 +553,7 @@ def Output_control():
         statusbar_0.config(text = "Output: Tracker:"+tracker+";"+" \tx: " + str(tx) + "\ty: " + str(ty) + "\tz: " + str(tz))
                 
     elif arucoRunning and len(aList)>0:
-        statusbar_0.config(text = "Output: Aruco:  x: %2.0f  y: %2.0f  z:%2.0f\troll: %2.0f  pitch:%2.0f  yaw:%2.0f"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
+        statusbar_0.config(text = "Output: Aruco:  x: %2.0f  y: %2.0f  z: %2.0f\troll: %2.0f  pitch: %2.0f  yaw: %2.0f"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
     
     else:
         statusbar_0.config(text="Output:")
@@ -585,16 +587,30 @@ def Button_controll():
 def SendData():
     telegram = ""
     global tx,ty,tz
-    # standard string format: $TX000000Y000000Z000000#
+    # standard string format: $TRACKX0000Y0000Z0000W000E000#
     if trackRunning and len(tList)>0:
-    
+                
         telegram = ("$TRACKX%.2fY%.2fZ%.2f#"%(tx, ty, tz))
+        # Add info to string if warning or error detected:
+        WE = Check_warning_error(tList)
+        index = telegram.find("#")
+        telegram = telegram[:index] + WE + telegram[index:]
+        
         print(telegram)
         
     elif arucoRunning and len(aList)>0:
-        #$AX000000Y000000Z000000PITCH0000000YAW000000ROLL000000#
+        #$ARUCOX0000Y0000Z0000PI00000YA0000RO0000E0#
         telegram = ("$ARUCOX%.2fY%.2fZ%.2fRO%.2fPI%.2fYA%.2f#"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
+        # Add info to string if detectin marker:
+        if aList[0].marking:
+            E = "E0"
+        else:
+            E = "E1"
+        index = telegram.find("#")
+        telegram = telegram[:index] + E + telegram[index:]
+        
         print(telegram)
+        
     try:
         main_socket.sendto(telegram.encode(), (ip,port))
         
@@ -609,7 +625,27 @@ def SendData():
     # data = data.decode()
     # print("Main: " + data)
     root.after(1000, SendData)
-    
+
+# Check if warning or error is triggered. Return string to telegram:    
+def Check_warning_error(xlist):
+    text ="W000E000"
+    i = 0
+    for obj in xlist:       
+        if obj.warning:
+            W = "1"
+        else: 
+            W = "0"
+        if obj.error:
+            E = "1"
+        else: 
+            E = "0"
+        new = list(text)
+        new[i+1] = W
+        new[i+5] = E
+        text = ''.join(new)
+        i+=1
+    return text
+                
 # Function click connect
 def Connect_UDP_Click():
     global ip, port
