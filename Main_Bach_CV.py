@@ -29,7 +29,7 @@ print("Program: Socket Created")
 
 
 #------------------------------------------------------------------
-#------------------Variables---------------------------------------
+#--------------------------Variables-------------------------------
 tms = 100    #Times pr milliscond
 
 global arucoRunning
@@ -50,8 +50,8 @@ class Colors:
 
 
 #------------------------------------------------------------------   
-#------------Undistort camera matrix-------------------------------
-#Get the camera calibration path  
+#----------------------Undistort camera matrix---------------------
+#Get the camera calibration path:
 calib_path  = "Calibration/"
 mtx = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
 dist = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
@@ -59,7 +59,7 @@ dist = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
 
 
 #------------------------------------------------------------------
-#----------------------Tracker-------------------------------------
+#--------------------------Tracker---------------------------------
 class Tracker:    
     def __init__(self, tracker_type, bbox, video_capture, color):
         
@@ -82,24 +82,24 @@ class Tracker:
         if self.tracker_type == "CSRT":
             self.tracker = cv2.legacy.TrackerCSRT_create()
 
-        # Exit if video not opened.
+        # Exit if video not opened:
         if not self.cap.isOpened():
             print ("Could not open video")
             sys.exit()
         
-        # Read first frame.
+        # Read first frame:
         self.ok, self.frame = self.cap.read()
         if not self.ok:
             print ('Cannot read video file')
             sys.exit()
         
         ########## UNDISTORT ########### (Comment out if using test video.mp4)
-        # Undistort image
+        # Undistort image:
         h,  w = self.frame.shape[:2]
         newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
-        # undistort
+        # Undistort:
         frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)  
-        # crop the image
+        # Crop the image:
         x, y, w, h = roi
         frame = frame[y:y+h, x:x+w]
         ##############################
@@ -121,29 +121,29 @@ class Tracker:
             trackRunning = True
             
             self.error = False
-            # Read a new frame
+            # Read a new frame:
             self.ok, self.frame = self.cap.read()
             
             ########## UNDISTORT ########### (Comment out if usen video.mp4)
             h,  w = self.frame.shape[:2]
             newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))      
-            # undistort
+            # Undistort:
             frame = cv2.undistort(self.frame, mtx, dist, None, newcameramtx)      
-            # crop the image
+            # Crop the image:
             x, y, w, h = roi
             frame = frame[y:y+h, x:x+w]
             ################################
      
-            # Update tracker
+            # Update tracker:
             self.ok, self.bbox = self.tracker.update(self.frame)
 
-            # Draw bounding box
+            # Draw bounding box:
             if self.ok:
-                # Tracking success
+                # Tracking success:
                 self.p1 = (int(self.bbox[0]), int(self.bbox[1]))
                 self.p2 = (int(self.bbox[0] + self.bbox[2]), int(self.bbox[1] + self.bbox[3]))
                 
-                # Centerpoint bbox
+                # Centerpoint bbox:
                 self.centerXbbox = int(self.bbox[0]+(self.bbox[2] / 2))
                 self.centerYbbox = int(self.bbox[1]+(self.bbox[3] / 2))
                  
@@ -156,7 +156,7 @@ class Tracker:
                         
             root.after(tms, self.Run)
             
-    # Start tracker 
+    # Start tracker:
     def Start(self):       
         self.tracker_running = True
         self.Run()
@@ -168,7 +168,7 @@ class Tracker:
 
     ## Calculate offsett from the center object and where det bbox was first sett:
     def Create_offsett_from_ref_bbox(self):
-        # Defining corner p1 and p2 for refferancebox
+        # Defining corner p1 and p2 for refferancebox:
         self.refBox = self.bbox
         self.refP1 = (int(self.refBox[0]), int(self.refBox[1]))
         self.refP2 = (int(self.refBox[0] + self.refBox[2]), int(self.refBox[1] + self.refBox[3]))
@@ -177,18 +177,18 @@ class Tracker:
         self.centerYrefBox = int(self.refBox[1]+(self.refBox[3] / 2))
         
     def Sett_offsett_from_ref_bbox(self):
-        # Create centerpoint refferencebox 
+        # Create centerpoint refferencebox: 
         self.cRefP1 = (self.centerXrefBox, self.centerYrefBox)
         self.cRefP2 = (self.centerXrefBox, self.centerYrefBox)
-        # Uppdate delta/offset from between center refbox and bbox
+        # Uppdate delta/offset from between center refbox and bbox:
         self.dx = float(self.centerXrefBox - self.centerXbbox)
         self.dy = float(self.centerYbbox - self.centerYrefBox)
         self.dz = float(self.refBox[3] - self.bbox[3])
 
 
-    ## Calculate offsett from the senter of screen
+    ## Calculate offsett from the senter of screen:
     def Create_offsett_from_center_screen(self):
-        # Refference to first bbox    
+        # Refference to first bbox:
         self.refBox = self.bbox   
         # Frame dimension:
         frameHeight = int(self.frame.shape[0])
@@ -198,13 +198,13 @@ class Tracker:
         self.centerFrameX = int(frameWidth/2) 
         
     def Sett_offsett_from_center_screen(self):
-        # Create refferencebox center screen
+        # Create refferencebox center screen:
         self.refP1 = (int(self.centerFrameX - self.refBox[2]/2) , int(self.centerFrameY - self.refBox[3]/2)) 
         self.refP2 = (int(self.centerFrameX + self.refBox[2]/2) , int(self.centerFrameY + self.refBox[3]/2))
-        # Create centerpoint in refferencebox center screen 
+        # Create centerpoint in refferencebox center screen:
         self.cRefP1 = (self.centerFrameX, self.centerFrameY)
         self.cRefP2 = (self.centerFrameX, self.centerFrameY)
-        # Update delta/offset between bbox and center screen 
+        # Update delta/offset between bbox and center screen:
         self.dx = float(self.centerXbbox - self.centerFrameX)
         self.dy = float(self.centerFrameY - self.centerYbbox)
         self.dz = float(self.refBox[3] - self.bbox[3])
@@ -213,7 +213,7 @@ class Tracker:
                     
             
 #-----------------------------------------------------------------
-#------------------------------Aruco------------------------------
+#---------------------------Aruco---------------------------------
 class Aruco:   
     def __init__(self, video_capture):  
           
@@ -234,7 +234,7 @@ class Aruco:
             self.marker_size = 10
             print("Invalid entry size aruco marker")
         
-        #-- Output variables
+        #-- Output variables:
         self.x = 0
         self.y = 0
         self.z = 0
@@ -243,18 +243,18 @@ class Aruco:
         self.yaw = 0
         self.marking = False
 
-        #--- Get the camera calibration path
+        #--- Get the camera calibration path:
         calib_path  = './Calibration/'
         self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',') #calib_path+
         self.camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
 
-        #--- 180 deg rotation matrix around the x axis
+        #--- 180 deg rotation matrix around the x axis:
         self.R_flip  = np.zeros((3,3), dtype=np.float32)
         self.R_flip[0,0] = 1.0
         self.R_flip[1,1] =-1.0
         self.R_flip[2,2] =-1.0
 
-        #--- Define the aruco dictionary
+        #--- Define the aruco dictionary:
         if aruco_lib_drop.get() == "4x4_100":
             self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
         elif aruco_lib_drop.get() == "5x5_100":
@@ -264,10 +264,10 @@ class Aruco:
             
         self.parameters  = aruco.DetectorParameters_create()
 
-        #-- Font for the text in the image
+        #-- Font for the text in the image:
         self.font = cv2.FONT_HERSHEY_PLAIN
         
-        #--- Validate rotasionmatrix
+        #--- Validate rotationmatrix:
     def isRotationMatrix(self,R):
         Rt = np.transpose(R)
         shouldBeIdentity = np.dot(Rt, R)
@@ -275,7 +275,7 @@ class Aruco:
         n = np.linalg.norm(I - shouldBeIdentity)
         return n < 1e-6
 
-        #--- kalkulerer rotasjonsmatrise til eulers
+        #--- Calculate rotationmatrix to Eulers:
     def rotationMatrixToEulerAngles(self,R):
         assert (self.isRotationMatrix(R))
 
@@ -299,10 +299,10 @@ class Aruco:
         if not trackRunning and arucoRunning:                     
             
             ret, self.frame = self.cap.read()
-            #-- Convert in gray scale
+            #-- Convert to grayscale:
             gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY) #-- OpenCV stores color images in Blue, Green, Red
 
-            #-- Find all the aruco markers in the image
+            #-- Find all the aruco markers in the image:
             corners, ids, rejected = aruco.detectMarkers(image=gray, dictionary=self.aruco_dict, parameters=self.parameters,
                                     cameraMatrix=self.camera_matrix, distCoeff=self.camera_distortion)
             
@@ -317,20 +317,20 @@ class Aruco:
                 #-- Unpack the output, get only the first
                 rvec, tvec = ret[0][0,0,:], ret[1][0,0,:]
 
-                #-- Draw the detected marker and put a reference frame over it
+                #-- Draw the detected marker and put a reference frame over it:
                 aruco.drawDetectedMarkers(self.frame, corners)
                 aruco.drawAxis(self.frame, self.camera_matrix, self.camera_distortion, rvec, tvec, 10)
-                #-- Obtain the rotation matrix tag->camera
+                #-- Obtain the rotation matrix marker ---> camera:
                 R_ct    = np.matrix(cv2.Rodrigues(rvec)[0])
                 R_tc    = R_ct.T
 
-                #-- Now get Position and attitude f the camera respect to the marker
+                #-- Now get Position and attitude for the camera respect to the marker:
                 pos_camera = -R_tc*np.matrix(tvec).T
 
-                #-- Update class position variables
+                #-- Update class position variables:
                 self.x, self.y, self.z = pos_camera[0], pos_camera[1], pos_camera[2]
 
-                #-- Get the attitude of the camera respect to the frame
+                #-- Get the attitude of the camera respect to the frame:
                 roll_camera, pitch_camera, yaw_camera = self.rotationMatrixToEulerAngles(self.R_flip*R_tc)
                 
                 #-- Update class attitude variables:
@@ -346,7 +346,7 @@ class Aruco:
                 label_vid_1.configure(image=imgtk)
             
             root.after(40, self.Aruco_run)   
-#----------------------Aruco END---------------------------------------     
+#---------------------------Aruco END-----------------------------------
         
         
         
@@ -361,7 +361,7 @@ def Aruco_Click():
     aList.append(a)
     aList[0].Aruco_run()     
     
-# Function that shows bbox and refbox from trackers on screen
+# Function that shows bbox and refbox from trackers on screen:
 def Show_frames_one():    
     if not arucoRunning:
         ok, frame = cap.read() 
@@ -379,7 +379,7 @@ def Show_frames_one():
                         # Display tracker type on frame:
                         cv2.putText(frame, obj.tracker_type , (30,j), cv2.FONT_HERSHEY_SIMPLEX, 0.6, obj.color, 1)                                     
                         cv2.putText(frame, "Setpoint", (30,25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, Colors.Red, 1)  
-                        j+=25   # Move text down screen if more trackers
+                        j+=25   # Move text down screen if more trackers:
                     except:
                         print("Error update tracker")
                         obj.error = True
@@ -392,7 +392,7 @@ def Show_frames_one():
     
     root.after(tms, Show_frames_one)
 
-# Choose the Region of interest
+# Choose the Region of interest:
 def New_ROI():
     ok, cv2_image = cap.read()
     if ok:
@@ -400,7 +400,7 @@ def New_ROI():
         cv2.destroyWindow('ROI selector')
     return bbox
 
-# Starts multiple selected trackers
+# Starts multiple selected trackers:
 def Click_multi_start():
     global arucoRunning
     arucoRunning = False
@@ -417,11 +417,11 @@ def Click_multi_start():
     for obj in tList:
         obj.Start()
     
-# Retrieve the selected camera source
+# Retrieve the selected camera source:
 def Camera_Select():
     int(camera_drop_1.get())
 
-# Function for stopping the tracker functions
+# Function for stopping the tracker functions:
 def Stop_all_trackers():
     for obj in tList:
         obj.Stop_tracker()
@@ -432,7 +432,7 @@ def Stop_all_trackers():
     global arucoRunning
     arucoRunning=False
 
-# Updates the statusbar with the offset        
+# Updates the statusbar with the offset:       
 def Update_statusbar():
     if len(tList) > 0:
         statusbar_1.config(text = "Tr.1:  " + tList[0].tracker_type +" \tx: " + str(round(tList[0].dx)) + "\ty: " + str(round(tList[0].dy)) + "\tz: " + str(round(tList[0].dz)))
@@ -448,9 +448,9 @@ def Update_statusbar():
         statusbar_3.config(text = "Tr.3")   
     root.after(200,Update_statusbar)
 
-# Controll indicators
+# Controll indicators:
 def Update_Indicators(): 
-    # Error detection indicators
+    # Error detection indicators:
     if len(tList) > 0:
         if tList[0].error:
             Indicator_1.itemconfig(my_oval_1, fill="red")
@@ -494,7 +494,7 @@ def Update_Indicators():
     
 #-------Errordetection--------------  
 
-# Timer for measuring time of movement.
+# Timer for measuring time of movement:
 def Error_timer():
     global pre_dx, pre_dy, pre_dz
     for obj in tList:
@@ -503,7 +503,7 @@ def Error_timer():
         pre_dz = obj.dz      
     root.after(1000, Error_timer) 
     
-# Error detection if tracker moves to far in a short ammount of time, indicates someting is wrong.   
+# Error detection if tracker moves to far in a short ammount of time, indicates that someting is wrong.   
 # If tracker moves more than 50 pixles in 500 millisec, warning vil be triggered.
 def Error_detection():
     for obj in tList:   
@@ -517,7 +517,7 @@ def Error_detection():
     
 #------------------------------------
 
-# Themporary output controll:
+# Output controll:
 def Output_control():
     i=0; j=0; x=0; y=0; z=0; tracker=""
     global tx, ty, tz
@@ -545,8 +545,10 @@ def Output_control():
         ty = round(y/i)
         tz = round(z/j)
         
+        #---- If tracker is running writes output to GUI:
         statusbar_0.config(text = "Output: Tracker:"+tracker+";"+" \tx: " + str(tx) + "\ty: " + str(ty) + "\tz: " + str(tz))
-                
+        
+        #---- If aruco is running writes output to GUI:
     elif arucoRunning and len(aList)>0:
         statusbar_0.config(text = "Output: Aruco:  x: %2.0f  y: %2.0f  z: %2.0f\troll: %2.0f  pitch: %2.0f  yaw: %2.0f"%(aList[0].x, aList[0].y, aList[0].z, aList[0].roll, aList[0].pitch, aList[0].yaw))
     
@@ -555,7 +557,7 @@ def Output_control():
         
     root.after(200, Output_control)
 
-# Configure enabling buttons
+# Configure enabling buttons:
 def Button_controll():
     if trackRunning:
         button_stop_all.config(state=NORMAL)
@@ -616,9 +618,6 @@ def SendData():
         print("Cannot send data UDP")
         Indicator_5_UDP.itemconfig(my_oval_1, fill="grey")
     
-    # data, client = main_socket.recvfrom(65535)          #For testing av utdata med server.
-    # data = data.decode()
-    # print("Main: " + data)
     root.after(1000, SendData)
 
 # Check if warning or error is triggered. Return string to telegram:    
@@ -641,7 +640,7 @@ def Check_warning_error(xlist):
         i+=1
     return text
                 
-# Function click connect
+# Function click connect:
 def Connect_UDP_Click():
     global ip, port
     try:
@@ -659,63 +658,63 @@ def Connect_UDP_Click():
         entry_ip.config({"background": "pink"})
 
     print("Program: Socket Connected")
-#-------------------------------Send data end----------------------------    
+#--------------------------Send data end---------------------------------    
     
     
 #------------------------------------------------------------------------ 
-#------------------------Calibration-------------------------------------
+#---------------------------Calibration----------------------------------
 def Cal_Click():
     
-    #Creat new window    
+    #Creat new window: 
     Top = Toplevel()
     Top.title('Calibrate')
-    #start camera button
+    #start camera button:
     global start_cam_cal_btn
     start_cam_cal_btn = Button(Top, text= "Start Camera", command= lambda: Start_cam_cal())
     start_cam_cal_btn.grid(row=0, column=0, padx= 10)
-    #Exit Button 
+    #Exit Button:
     exit_top_btn = Button(Top,text="Exit", command=lambda:Top.destroy())
     exit_top_btn.grid(row=4, column=0)
-    #Camera Frame 
+    #Camera Frame:
     frame_Cal = LabelFrame(Top, text= "Camera", padx= 5, pady= 5 )
     frame_Cal.grid(row=0, column=2, rowspan= 8)
 
     def Start_cam_cal():
-        #Start Camera button
+        #Start Camera button:
         global start_cam_cal_btn
         start_cam_cal_btn = Button(Top, text= "Start Camera", state= DISABLED)
         start_cam_cal_btn.grid(row=0, column=0)
         
-        #Calibrate video label
+        #Calibrate video label:
         Cal_label = Label(frame_Cal)
         Cal_label.grid(row=0, column=2, rowspan=10)
         
-        #Take picture button
+        #Take picture button:
         Take_Pic_Button = Button(Top,text="Take Picture", command= lambda:take_pic())
         Take_Pic_Button.grid(row=1, column=0)
-        #Start Calibrate button  
+        #Start Calibrate button:
         Start_Cal_btn = Button(Top, text= "Start Calibrate", command= lambda:Start_Calib())
         Start_Cal_btn.grid(row= 2, column=0)
         
-        #Number of pictures needed Label
+        #Number of pictures needed Label:
         Ant_pic_lab = Label(Top, text="Need 25 or more pictures:")
         Ant_pic_lab.grid(row=9, column=0, columnspan=3)
 
-        #Camera Frame and video capture
+        #Camera Frame and video capture:
         Cal_label.frame_num = 0
         Cal_label.grid(row=0, column=0)
         
-        #Checking if the number of pictures are enough or good
+        #Checking if the number of pictures are enough or good:
         Ant_pic_err_lab1 = Label(Top, text="")
         Ant_pic_err_lab1.grid(row=10, column=0, columnspan=3)
         Ant_pic_err_lab2 = Label(Top, text="")
         Ant_pic_err_lab2.grid(row=11, column=0, columnspan=3)
         
-          #Print the distorion value to label
+        # Print the distorion value to label:
         label_Error = Label(Top, text = "Total error: ")
         label_Error.grid(row= 5, column= 0)
         
-        #Print the distorion value status to label
+        # Print the distorion value status to label:
         Error_value = ""
         Error_status = Label(Top, text = "Error Status: "+ Error_value)
         Error_status.grid(row= 6, column=0)
@@ -724,8 +723,8 @@ def Cal_Click():
             print("Cannot open camera")
             exit()
             
+        # Show video stream:
         def show_frames():
-            #Show video stream
             cv2image= cv2.cvtColor(cap.read()[1],cv2.COLOR_BGR2RGB)
             Cal_img = Image.fromarray(cv2image)
             imgtk = ImageTk.PhotoImage(image = Cal_img)
@@ -734,8 +733,8 @@ def Cal_Click():
             Cal_label.configure(image=imgtk)
             Cal_label.after(20, show_frames)
 
+        # Count pictures taken:
         def take_pic():
-            #Take picture and save to folder
             save_path = './Cal_Images'
             file_name = f"{Cal_label.frame_num}.jpg"
             complete_name = os.path.join(save_path, file_name)
@@ -746,9 +745,8 @@ def Cal_Click():
             imgpil.close()
             Pic_taken()
 
+        # Count pictures taken:
         def Pic_taken():
-            #count pictures taken
-
             Fold_Path = './Cal_Images'
             count = 0
             for path in os.listdir(Fold_Path):
@@ -758,7 +756,7 @@ def Cal_Click():
             label_Pic_counter = Label(Top, text="Pictures: "+ str(count))
             label_Pic_counter.grid(row= 3, column= 0)
         
-        #Calibrate function
+        # Calibrate function:
         def Start_Calib():               
             nRows = 9
             nCols = 6
@@ -766,14 +764,14 @@ def Cal_Click():
             workingFolder   = './Cal_Images'
             imageType       = 'jpg'
             
-            # termination criteria
+            # Termination criteria:
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, dimension, 0.001)
 
-            # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+            # Prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0):
             objp = np.zeros((nRows*nCols,3), np.float32)
             objp[:,:2] = np.mgrid[0:nCols,0:nRows].T.reshape(-1,2)
 
-            # Arrays to store object points and image points from all the images.
+            # Arrays to store object points and image points from all the images.:
             objpoints = [] # 3d point in real world space
             imgpoints = [] # 2d points in image plane.
 
@@ -790,7 +788,7 @@ def Cal_Click():
             if '-h' in sys.argv or '--h' in sys.argv:
                 sys.exit()
 
-            # Find the images files
+            # Find the images files:
             filename    = workingFolder + "/*." + imageType
             images      = glob.glob(filename)
 
@@ -802,19 +800,19 @@ def Cal_Click():
 
                 for fname in images:
                     if 'calibresult' in fname: continue
-                    #-- Read the file and convert in greyscale
+                    #-- Read the file and convert to greyscale:
                     img     = cv2.imread(fname)
                     gray    = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-                    # Find the chess board corners
+                    # Find the chess board corners:
                     ret, corners = cv2.findChessboardCorners(gray, (nCols,nRows),None)
 
-                    # If found, add object points, image points (after refining them)
+                    # If found, add object points, image points (after refining them):
                     if ret == True:
-                        #--- Sometimes, Harris cornes fails with crappy pictures, so
+                        #--- If Harris cornes fails with bad pictures:
                         corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
 
-                        # Draw and display the corners
+                        # Draw and display the corners:
                         cv2.drawChessboardCorners(img, (nCols,nRows), corners2,ret)
                         cv2.imshow('img',img)
   
@@ -830,46 +828,46 @@ def Cal_Click():
                 
                 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
 
-                # Undistort an image
+                # Undistort an image:
                 img = cv2.imread(imgNotGood)
                 h,  w = img.shape[:2]
                 newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
 
-                # undistort
+                # Computes the undistortion and rectification transformation map:
                 mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
                 dst = cv2.remap(img,mapx,mapy,cv2.INTER_LINEAR)
 
-                # crop the image
+                # Crop the image:
                 x,y,w,h = roi
                 dst = dst[y:y+h, x:x+w] 
                 cv2.imwrite("calibresult.png",dst)
                 np.savetxt("./Calibration/cameraMatrix.txt", mtx, delimiter=',')
                 np.savetxt("./Calibration/cameraDistortion.txt", dist, delimiter=',')
                 
-                #Finding the distortion value
+                # Finding the distortion value:
                 mean_error = 0
                 for i in range(len(objpoints)):
                     imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
                     error = cv2.norm(imgpoints[i],imgpoints2, cv2.NORM_L2)/len(imgpoints2)
                     mean_error += error
                     
-                #Print the distortion value
+                # Print the distortion value:
                 Print_Error = round(mean_error/len(objpoints),4)
                 label_Error.config(text = "Total error:\n" + str(Print_Error))
                 
-                #print the distortion Status value status
+                # Print the distortion Status value status:
                 if (Print_Error < 0,1):
                     Error_value =" OK "
                 else:
                     Error_value = "Not OK"   
                 Error_status.config(text = "Error Status:\n"+ Error_value)
                 
-                #Print the status of pictures taken to start calibrate
+                # Print the status of pictures taken to start calibrate:
                 ant_pic_status ="You have the number of pictures needed to calibrate"
                 Ant_pic_err_lab1.config(text=ant_pic_status)  
 
             else:
-                #Print the status of pictures taken to start calibrate
+                # Print the status of pictures taken to start calibrate:
                 ant_pic_status ="In order to calibrate you need at least 25 good pictures..."
                 Ant_pic_err_lab1.config(text=ant_pic_status)
                 
@@ -891,7 +889,7 @@ if __name__ == "__main__":
     root.iconbitmap('favicon.ico')     # Setts icon for app
     root.geometry("1500x760")
         
-    #-----------DEFINING Widgets:---------------
+    #------------------DEFINING Widgets------------------------
     
     # Frames define:
     frame_0 = LabelFrame(root, text="", padx=10, pady=10)
@@ -921,7 +919,7 @@ if __name__ == "__main__":
     statusbar_2 = Label(frame_0, text="Tr.2: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     statusbar_3 = Label(frame_0, text="Tr.3: ", bd=2, relief=SUNKEN, anchor=W, bg='white')
     
-    # Indicators Canvas
+    # Indicators Canvas:
     Indicator_1 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
     Indicator_2 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
     Indicator_3 = Canvas(frame_0, width=20, height=20)  # Create 20x20 Canvas widget
@@ -942,7 +940,7 @@ if __name__ == "__main__":
     button_aruco = Button(frame_0, text ='Aruco Start', padx=5, pady=1, command=lambda:Aruco_Click())
     button_connect = Button(frame_0, text= "Connect", padx=10, pady=2, command=lambda:Connect_UDP_Click())
     
-    # Dropdown menues
+    # Dropdown menues:
     camera_drop_1 = ttk.Combobox(frame_0, value = [0,1,2,3,5])
     camera_drop_1.current(0)
     tracker_drop_1 = ttk.Combobox(frame_0, value = ["0", "MEDIANFLOW", "CSRT", "MOSSE"])
@@ -956,7 +954,7 @@ if __name__ == "__main__":
     aruco_lib_drop = ttk.Combobox(frame_0, width=7,value = ["4x4_100", "5x5_100", "Classic"])
     aruco_lib_drop.current(0)
     
-    # Text entrys
+    # Text entrys:
     entry_port = Entry(frame_0, width=14 ) 
     entry_port.insert(0, "5433")
     entry_ip = Entry(frame_0, width=14 )
@@ -965,7 +963,7 @@ if __name__ == "__main__":
     entry_aruco_size = Entry(frame_0, width=10)
     #---------------------------------------------------------
 
-    #---------------PLACING ON ROOT:--------------------------
+    #--------------------PLACING ON ROOT----------------------
     # Label placing:
     label_vid_1.grid(row=0,column=0)
     label_camera.grid(row=0,column=0)
@@ -1017,7 +1015,7 @@ if __name__ == "__main__":
     Indicator_4.grid(row=2,column=6)
     Indicator_5_UDP.grid(row=16,column=3)
     
-    # Entrys
+    # Entrys:
     entry_port.grid(row=15,column=1)
     entry_ip.grid(row=16,column=1)
     entry_aruco_id.grid(row=3,column=5)
@@ -1027,14 +1025,14 @@ if __name__ == "__main__":
  
 
     #-------------------------------------------------------
-    #-----------------Commands------------------------------
+    #----------------------Commands-------------------------
     
     # List of trackers
     tList = []
     # Aruco list
     aList = []
     
-    # Default camerasource if no tracker selected
+    # Default camerasource if no tracker is selected
     if len(tList) == 0:
         cap = cv2.VideoCapture(0)
     
