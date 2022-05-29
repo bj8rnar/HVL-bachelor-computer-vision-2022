@@ -133,8 +133,7 @@ class Tracker:
             x, y, w, h = roi
             frame = frame[y:y+h, x:x+w]
             ################################
-                    
-
+     
             # Update tracker
             self.ok, self.bbox = self.tracker.update(self.frame)
 
@@ -219,7 +218,7 @@ class Aruco:
     def __init__(self, video_capture):  
           
         self.cap = video_capture
-        
+        #-- Read entryboxes for input values:
         try:
             self.id_to_find  = int(entry_aruco_id.get())
             entry_aruco_id.config({"background": "white"})
@@ -235,7 +234,7 @@ class Aruco:
             self.marker_size = 10
             print("Invalid entry size aruco marker")
         
-        #-- Outputs
+        #-- Output variables
         self.x = 0
         self.y = 0
         self.z = 0
@@ -245,7 +244,6 @@ class Aruco:
         self.marking = False
 
         #--- Get the camera calibration path
-        #os.chdir('./Calibration')
         calib_path  = './Calibration/'
         self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',') #calib_path+
         self.camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
@@ -269,7 +267,7 @@ class Aruco:
         #-- Font for the text in the image
         self.font = cv2.FONT_HERSHEY_PLAIN
         
-        #--- Validerer rotasjonsmatrise
+        #--- Validate rotasionmatrix
     def isRotationMatrix(self,R):
         Rt = np.transpose(R)
         shouldBeIdentity = np.dot(Rt, R)
@@ -310,10 +308,10 @@ class Aruco:
             
             if ids is not None and ids[0] == self.id_to_find:
                 self.marking = True
-                #-- ret = [rvec, tvec, ?]
+                #-- ret = [rvec, tvec, ]
                 #-- array of rotation and position of each marker in camera frame
-                #-- rvec = [[rvec_1], [rvec_2], ...]    attitude of the marker respect to camera frame
-                #-- tvec = [[tvec_1], [tvec_2], ...]    position of the marker in camera frame
+                #-- rvec = [[rvec_1], [rvec_2], ]    attitude of the marker respect to camera frame
+                #-- tvec = [[tvec_1], [tvec_2], ]    position of the marker in camera frame
                 ret = aruco.estimatePoseSingleMarkers(corners, self.marker_size, self.camera_matrix, self.camera_distortion)
 
                 #-- Unpack the output, get only the first
@@ -322,7 +320,6 @@ class Aruco:
                 #-- Draw the detected marker and put a reference frame over it
                 aruco.drawDetectedMarkers(self.frame, corners)
                 aruco.drawAxis(self.frame, self.camera_matrix, self.camera_distortion, rvec, tvec, 10)
-
                 #-- Obtain the rotation matrix tag->camera
                 R_ct    = np.matrix(cv2.Rodrigues(rvec)[0])
                 R_tc    = R_ct.T
